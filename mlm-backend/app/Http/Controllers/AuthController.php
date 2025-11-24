@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +40,7 @@ class AuthController extends Controller
                 'address' => $request->address,
                 'nominee' => $request->nominee,
                 'password' => Hash::make($request->password),
+                'role' => 'User',
             ];
             
             // Add sponsor details if provided
@@ -188,10 +190,11 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $user = User::with('roleDetails')->where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
             $token = $user->createToken('auth_token')->plainTextToken;
             
-            $permissions = $user->roleDetails ? $user->roleDetails->permissions : [];
+            $role = Role::where('name', $user->role)->first();
+            $permissions = $role ? $role->permissions : [];
 
             return response()->json([
                 'success' => true,

@@ -1,13 +1,8 @@
-// app/admin/users/components/CreateUserModal.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -34,44 +29,27 @@ type FormValues = {
   password: string;
   password_confirmation: string;
   profile_picture?: FileList;
-  role_id?: string; // internal role id string like "ROLE17636..."
+  role?: string;
 };
 
 export default function CreateUserModal({ open, onOpenChange, onCreated }: Props) {
-  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      sponsor_id: "",
-      sponsor_name: "",
-      position: "",
-      nominee: "",
-      password: "",
-      password_confirmation: "",
-      role_id: "",
-    },
-  });
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } =
+    useForm<FormValues>();
 
   const [preview, setPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<any[]>([]);
 
   useEffect(() => {
     const file = watch("profile_picture")?.[0];
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    } else {
-      setPreview(null);
-    }
+    if (file) setPreview(URL.createObjectURL(file));
+    else setPreview(null);
   }, [watch("profile_picture")]);
 
   async function fetchRoles() {
     try {
-      // use ProjectApiList constant if available
-      const res = await axiosInstance.get(ProjectApiList.api_getRoles || "/api/roles");
+      const res = await axiosInstance.get(ProjectApiList.api_getRoles);
       setRoles(res.data.roles || []);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load roles");
     }
   }
@@ -91,12 +69,12 @@ export default function CreateUserModal({ open, onOpenChange, onCreated }: Props
       fd.append("sponsor_name", data.sponsor_name || "");
       fd.append("position", data.position || "");
       fd.append("nominee", data.nominee || "");
+
       fd.append("password", data.password);
       fd.append("password_confirmation", data.password_confirmation);
 
-      // append role internal id string (Option B)
-      if (data.role_id) {
-        fd.append("role_id", data.role_id);
+      if (data.role) {
+        fd.append("role", data.role);
       }
 
       if (data.profile_picture?.[0]) {
@@ -110,6 +88,7 @@ export default function CreateUserModal({ open, onOpenChange, onCreated }: Props
       toast.success("User created");
       reset();
       setPreview(null);
+      onOpenChange(false);
       onCreated();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to create user");
@@ -125,95 +104,45 @@ export default function CreateUserModal({ open, onOpenChange, onCreated }: Props
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* left: form (takes 2 columns on md, but inside we use 3-column rows) */}
+            
             <div className="md:col-span-2 space-y-3">
-              {/* Row 1: Name | Email | Phone */}
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-sm font-medium">Name</label>
                   <input {...register("name", { required: true })} className="w-full border rounded px-3 py-2 text-sm" />
-                  {errors.name && <p className="text-xs text-red-500">Name required</p>}
+                  {errors.name && <p className="text-xs text-red-500">Required</p>}
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">Email</label>
                   <input {...register("email", { required: true })} className="w-full border rounded px-3 py-2 text-sm" />
-                  {errors.email && <p className="text-xs text-red-500">Email required</p>}
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">Phone</label>
                   <input {...register("phone", { required: true })} className="w-full border rounded px-3 py-2 text-sm" />
-                  {errors.phone && <p className="text-xs text-red-500">Phone required</p>}
                 </div>
               </div>
 
-              {/* Row 2: Sponsor ID | Sponsor Name | Position */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-sm font-medium">Sponsor ID</label>
-                  <input {...register("sponsor_id")} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Sponsor Name</label>
-                  <input {...register("sponsor_name")} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Position</label>
-                  <input {...register("position")} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
-              </div>
-
-              {/* Row 3: Nominee | Address | Role */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-sm font-medium">Nominee</label>
-                  <input {...register("nominee")} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Address</label>
-                  <input {...register("address")} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
-
                 <div>
                   <label className="text-sm font-medium">Role</label>
-                  <select
-                    {...register("role_id", { required: true })}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
+                  <select {...register("role", { required: true })}
+                    className="w-full border rounded px-3 py-2 text-sm">
                     <option value="">Select Role</option>
                     {roles.map((r) => (
-                      <option key={r.id} value={r.role_id}>
+                      <option key={r.id} value={r.name}>
                         {r.name}
                       </option>
                     ))}
                   </select>
-                  {errors.role_id && <p className="text-xs text-red-500">Role is required</p>}
+                  {errors.role && <p className="text-xs text-red-500">Required</p>}
                 </div>
               </div>
 
-              {/* Row 4: Password | Confirm Password | (empty) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-sm font-medium">Password</label>
-                  <input type="password" {...register("password", { required: true })} className="w-full border rounded px-3 py-2 text-sm" />
-                  {errors.password && <p className="text-xs text-red-500">Password required</p>}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Confirm Password</label>
-                  <input type="password" {...register("password_confirmation", { required: true })} className="w-full border rounded px-3 py-2 text-sm" />
-                  {errors.password_confirmation && <p className="text-xs text-red-500">Confirmation required</p>}
-                </div>
-
-                <div />
-              </div>
             </div>
 
-            {/* right: image */}
             <div className="flex flex-col items-center gap-3">
               <div className="text-sm font-medium">Profile Picture</div>
 
@@ -225,30 +154,14 @@ export default function CreateUserModal({ open, onOpenChange, onCreated }: Props
                 )}
               </div>
 
-             {/* Custom File Upload Button */}
-<label
-  htmlFor="profile_picture"
-  className="cursor-pointer bg-green-600 text-white px-4 py-1 rounded-md text-sm font-medium hover:bg-green-700 transition"
->
-  Choose File
-</label>
+              <label htmlFor="profile_picture"
+                className="cursor-pointer bg-green-600 text-white px-4 py-1 rounded-md text-sm hover:bg-green-700 transition">
+                Choose File
+              </label>
 
-<input
-  id="profile_picture"
-  type="file"
-  accept="image/*"
-  {...register("profile_picture")}
-  className="hidden"
-/>
-
-{/* File Name */}
-{/* {watch("profile_picture")?.[0] && (
-  <p className="text-xs text-gray-600 mt-1">
-    Selected: <span className="font-medium">{watch("profile_picture")[0].name}</span>
-  </p>
-)} */}
-
+              <input type="file" id="profile_picture" accept="image/*" {...register("profile_picture")} className="hidden" />
             </div>
+
           </div>
 
           <DialogFooter>

@@ -50,6 +50,17 @@ const ProjectApiList = {
   api_deleteRole: `${BASE_URL}/roles/delete`,
   api_updateRole: `${BASE_URL}/roles/update`,
   api_getRolesById: `${BASE_URL}/roles/show`,
+  
+  // BV-History
+  api_getBVHistoryofUser: `${BASE_URL}/bv-history/show`,
+  
+  
+  // BV-History
+  MLM_HIERARCHY: `${BASE_URL}/users/mlm-hierarchy`,
+  
+  // Teams
+  MLM_HIERARCHY_LIST: `${BASE_URL}/users/mlm-hierarchy-list`,
+  SPONSORED_USERS: `${BASE_URL}/users/sponsored-users`,
 };
 
 export default ProjectApiList;

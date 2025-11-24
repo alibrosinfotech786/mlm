@@ -112,13 +112,20 @@ export default function IDCard() {
           {/* Profile Section */}
           <div className="flex flex-col items-center py-6 px-5">
             <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-green-600 shadow-md bg-white">
-              <Image
-                src={photoSrc}
-                alt={`${user.name} Profile`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
+              {user.photo && user.photo.trim() !== "" ? (
+                <Image
+                  src={photoSrc}
+                  alt={`${user.name} Profile`}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span className="flex items-center justify-center w-full h-full text-3xl font-semibold text-green-700 bg-green-100">
+                  {user.name?.charAt(0).toUpperCase()}
+                </span>
+              )}
+
             </div>
 
             <h2 className="text-lg font-semibold text-foreground mt-4 capitalize">

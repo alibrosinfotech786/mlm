@@ -41,7 +41,8 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Matching Income",
     "Sponser Matching Income",
     "Repurchasing Income",
-    "Grievance"
+    "Grievance",
+    "BV Summary"
   ];
 
   const [permissions, setPermissions] = useState(

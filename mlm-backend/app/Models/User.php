@@ -36,7 +36,6 @@ class User extends Authenticatable
         'wallet_balance',
         'rank',
         'role',
-        'role_id',
         'isActive',
     ];
 
@@ -92,9 +91,11 @@ class User extends Authenticatable
         return $this->hasOne(KycDetail::class);
     }
     
-    public function roleDetails()
+
+    
+    public function bvHistories()
     {
-        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+        return $this->hasMany(BvHistory::class, 'user_id', 'user_id');
     }
     
     public function updateStatusBasedOnBv()

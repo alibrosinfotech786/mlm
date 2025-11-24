@@ -33,6 +33,7 @@ export default function SignInPage() {
         document.cookie = `token=${response.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax;`;
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("permissions", JSON.stringify(response.data.permissions));
         window.location.href = "/admin/dashboard";
       }
 

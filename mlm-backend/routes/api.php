@@ -10,6 +10,7 @@ use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\BvHistoryController;
 
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -36,6 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/delete', [UserController::class, 'destroy']);
     Route::get('/users/binary-tree', [UserController::class, 'getBinaryTree']);
     Route::get('/users/mlm-hierarchy', [UserController::class, 'getMlmHierarchy']);
+    Route::get('/users/mlm-hierarchy-list', [UserController::class, 'getMlmHierarchyList']);
+    Route::get('/users/sponsored-users', [UserController::class, 'getSponsoredUsers']);
     Route::get('/users/mlm-structure', [UserController::class, 'getMlmStructure']);
     Route::get('/users/available-positions', [UserController::class, 'getAvailablePosition']);
 
@@ -81,5 +84,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/roles/show', [RoleController::class, 'show']);
     Route::post('/roles/update', [RoleController::class, 'update']);
     Route::post('/roles/delete', [RoleController::class, 'destroy']);
+    
+    // BV History routes
+    Route::get('/bv-history', [BvHistoryController::class, 'index']);
+    Route::get('/bv-history/show', [BvHistoryController::class, 'show']);
 });
 

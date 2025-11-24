@@ -1,121 +1,90 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import DataTable from "@/components/common/DataTable";
-
-interface TeamMember {
-  regDate: string;
-  userId: string;
-  name: string;
-  sponsorUserId: string;
-  placement: string;
-  level: number;
-  activationDate: string;
-  pv: number;
-  cbp: number;
-  billAmount: number;
-}
-
-// ✅ Actual Data
-const teamData: TeamMember[] = [
-  {
-    regDate: "2024-10-12",
-    userId: "TA1001",
-    name: "Vishal Verma",
-    sponsorUserId: "TA9001",
-    placement: "Left",
-    level: 1,
-    activationDate: "2024-10-14",
-    pv: 120,
-    cbp: 300,
-    billAmount: 2500,
-  },
-  {
-    regDate: "2024-10-14",
-    userId: "TA1002",
-    name: "Aman Kumar",
-    sponsorUserId: "TA9002",
-    placement: "Right",
-    level: 1,
-    activationDate: "2024-10-16",
-    pv: 100,
-    cbp: 250,
-    billAmount: 2200,
-  },
-  {
-    regDate: "2024-10-15",
-    userId: "TA1003",
-    name: "Priya Sharma",
-    sponsorUserId: "TA9001",
-    placement: "Left",
-    level: 2,
-    activationDate: "2024-10-17",
-    pv: 150,
-    cbp: 310,
-    billAmount: 2700,
-  },
-  {
-    regDate: "2024-10-18",
-    userId: "TA1004",
-    name: "Rahul Mehta",
-    sponsorUserId: "TA9003",
-    placement: "Right",
-    level: 2,
-    activationDate: "2024-10-20",
-    pv: 90,
-    cbp: 200,
-    billAmount: 1800,
-  },
-  {
-    regDate: "2024-10-19",
-    userId: "TA1005",
-    name: "Sneha Gupta",
-    sponsorUserId: "TA9004",
-    placement: "Left",
-    level: 3,
-    activationDate: "2024-10-22",
-    pv: 130,
-    cbp: 270,
-    billAmount: 2400,
-  },
-];
+import axiosInstance from "@/app/api/axiosInstance";
+import ProjectApiList from "@/app/api/ProjectApiList";
 
 export default function AllTeamPage() {
+  const [teamData, setTeamData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false); // ⬅ ADDED
 
-  // ✅ Remove the empty teamData redeclaration below
-  // const teamData: TeamMember[] = []; ❌
+  const fetchTeam = async () => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Columns for DataTable
-  const columns: { key: keyof TeamMember; label: string }[] = [
-    { key: "regDate", label: "Reg. Date" },
-    { key: "userId", label: "User ID" },
-    { key: "name", label: "Name" },
-    { key: "sponsorUserId", label: "Spon User ID" },
-    { key: "placement", label: "Placement" },
-    { key: "level", label: "Level" },
-    { key: "activationDate", label: "Activation Date" },
-    { key: "pv", label: "PV" },
-    { key: "cbp", label: "CBP" },
-    { key: "billAmount", label: "Bill Amount ₹" },
-  ];
+    if (!user?.user_id) return;
 
-  // Filtered + paginated data
-  const filteredData = teamData.filter(
-    (member) =>
-      member.name?.toLowerCase().includes(search.toLowerCase()) ||
-      member.userId?.toLowerCase().includes(search.toLowerCase())
-  );
+    try {
+      setLoading(true); // ⬅ START Loading
 
-  const totalPages = Math.ceil(filteredData.length / entries);
-  const startIndex = (page - 1) * entries;
-  const paginatedData = filteredData.slice(startIndex, startIndex + entries);
+      const res = await axiosInstance.get(
+        `${ProjectApiList.MLM_HIERARCHY_LIST}?user_id=${user.user_id}&page=${page}&per_page=${entries}&search=${search}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+
+      if (res.data.success) {
+        const pagination = res.data.pagination;
+
+        const formattedData = res.data.downlines.map((item: any) => ({
+          regDate: item.created_at?.split("T")[0] || "-",
+          userId: item.user_id || "-",
+          name: item.name || "-",
+          phone: item.phone || "-",
+          sponsorUserId: item.sponsor_id || "-",
+          placement: item.position || "-",
+          pv: Number(item.bv) || 0,
+          cbp: Number(item.wallet_balance) || 0,
+        }));
+
+        setTeamData(formattedData);
+        setTotalPages(pagination.last_page || 1);
+        setPage(pagination.current_page || 1);
+      }
+    } catch (error) {
+      console.error("Team List Fetch Error:", error);
+    } finally {
+      setLoading(false); // ⬅ END Loading
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchTeam();
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search, page, entries]);
+
+
 
   const handlePrevious = () => setPage((p) => Math.max(p - 1, 1));
-  const handleNext = () => setPage((p) => Math.min(p + 1, totalPages || 1));
+  const handleNext = () => setPage((p) => Math.min(p + 1, totalPages));
+
+const columns = [
+  {
+    key: "sno",
+    label: "S.No",
+    render: (_: any, __: any, index: number) => {
+      return (page - 1) * entries + index + 1;
+    },
+  },
+  { key: "regDate", label: "Reg. Date" },
+  { key: "userId", label: "User ID" },
+  { key: "name", label: "Name" },
+  { key: "phone", label: "Phone" },
+  { key: "sponsorUserId", label: "Sponsor ID" },
+  { key: "placement", label: "Placement" },
+  { key: "pv", label: "PV" },
+  { key: "cbp", label: "CBP" },
+];
+
 
   return (
     <>
@@ -123,32 +92,29 @@ export default function AllTeamPage() {
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* ===== PAGE HEADER ===== */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-green-800">All Team</h1>
-              <p className="text-green-700 text-sm">
-                Manage and track your All team members easily.
-              </p>
-            </div>
-          </div>
 
-          {/* ===== DATA TABLE ===== */}
+          <h1 className="text-2xl font-bold text-green-800">All Team</h1>
+
           <div className="bg-white rounded-b-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
-              data={paginatedData}
+              data={teamData}
+              loading={loading} // ⬅ LOADING USED HERE
               page={page}
               totalPages={totalPages}
               entries={entries}
               search={search}
               onSearchChange={setSearch}
-              onEntriesChange={setEntries}
+              onEntriesChange={(val) => {
+                setEntries(val);
+                setPage(1);
+              }}
               onPrevious={handlePrevious}
               onNext={handleNext}
-              emptyMessage="No data available in table"
+              emptyMessage="No team data available"
             />
           </div>
+
         </div>
       </section>
     </>
