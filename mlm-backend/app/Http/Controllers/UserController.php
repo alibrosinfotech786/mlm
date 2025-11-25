@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
+use App\Models\BvHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -17,10 +19,10 @@ class UserController extends Controller
             $perPage = $request->get('per_page', 10);
             $perPage = in_array($perPage, [5, 10, 15, 20, 25, 50]) ? $perPage : 10;
             
-            $query = User::with(['roleDetails']);
+            $query = User::query();
             
-            if ($request->has('role_id') && $request->role_id !== '') {
-                $query->where('role_id', $request->role_id);
+            if ($request->has('role') && $request->role !== '') {
+                $query->where('role', $request->role);
             }
             
             if ($request->has('isActive') && $request->isActive !== '') {
@@ -28,13 +30,6 @@ class UserController extends Controller
             }
             
             $users = $query->paginate($perPage);
-            
-            $users->getCollection()->each(function ($user) {
-                if ($user->role_id && $user->roleDetails) {
-                    $user->role = $user->roleDetails->name;
-                }
-                unset($user->roleDetails);
-            });
             
             return response()->json([
                 'success' => true,
@@ -64,7 +59,7 @@ class UserController extends Controller
                 'root_id' => 'nullable|exists:users,user_id',
                 'position' => 'nullable|in:left,right',
                 'nominee' => 'nullable|string|max:255',
-                'role_id' => 'nullable|exists:roles,role_id',
+                'role' => 'nullable|exists:roles,name',
                 'isActive' => 'nullable|boolean',
                 'current_password' => 'required_with:password,transaction_password|string',
                 'password' => 'nullable|string|min:8',
@@ -85,11 +80,7 @@ class UserController extends Controller
                 }
             }
             
-            $data = $request->only(['name', 'email', 'phone', 'address', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role_id', 'isActive']);
-            
-            if ($request->has('role_id')) {
-                $data['role'] = $request->role_id ? 'assigned' : 'user';
-            }
+            $data = $request->only(['name', 'email', 'phone', 'address', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role', 'isActive']);
             
             if ($request->password) {
                 $data['password'] = Hash::make($request->password);
@@ -245,7 +236,7 @@ class UserController extends Controller
             }
             
             $levels = $request->levels ?? 10;
-            $hierarchy = $this->buildMlmHierarchy($rootUser, $levels, 1);
+            $hierarchy = $this->buildMlmHierarchy($rootUser, $levels, 0);
             
             return response()->json([
                 'success' => true,
@@ -405,6 +396,350 @@ class UserController extends Controller
         $path = "uploads/profiles/" . $fileName;
         $file->move(public_path("uploads/profiles"), $fileName);
         return $path;
+    }
+    
+    public function getMlmHierarchyList(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,user_id',
+                'side' => 'nullable|in:left,right',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'search' => 'nullable|string'
+            ]);
+            
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            if ($request->has('side') && $request->side !== '') {
+                // Get specific side and all its descendants
+                $sideChild = $request->side === 'left' ? $user->leftChild : $user->rightChild;
+                if ($sideChild) {
+                    $downlines = $this->getAllDescendants($sideChild);
+                } else {
+                    $downlines = collect();
+                }
+            } else {
+                // Get all descendants
+                $downlines = $this->getAllDescendants($user);
+            }
+            
+            // Apply search filter
+            if ($request->has('search') && $request->search !== '') {
+                $searchTerm = $request->search;
+                $downlines = $downlines->filter(function ($user) use ($searchTerm) {
+                    return stripos($user->user_id, $searchTerm) !== false ||
+                           stripos($user->name, $searchTerm) !== false ||
+                           stripos($user->email, $searchTerm) !== false;
+                });
+            }
+            
+            // Apply pagination
+            $perPage = $request->get('per_page', 10);
+            $currentPage = $request->get('page', 1);
+            $total = $downlines->count();
+            
+            $paginatedDownlines = $downlines->forPage($currentPage, $perPage)->values();
+            
+            $pagination = [
+                'current_page' => (int) $currentPage,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+                'from' => $total > 0 ? (($currentPage - 1) * $perPage) + 1 : null,
+                'to' => $total > 0 ? min($currentPage * $perPage, $total) : null
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'user' => $user,
+                'downlines' => $paginatedDownlines,
+                'pagination' => $pagination
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'MLM_HIERARCHY_LIST_ERROR',
+                'message' => 'Failed to fetch MLM hierarchy list',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    private function getAllDescendants($user)
+    {
+        $descendants = collect();
+        
+        if (!$user) {
+            return $descendants;
+        }
+        
+        // Get direct children
+        $directChildren = User::where('root_id', $user->user_id)->get();
+        
+        foreach ($directChildren as $child) {
+            $descendants->push($child);
+            // Recursively get all descendants of this child
+            $descendants = $descendants->merge($this->getAllDescendants($child));
+        }
+        
+        return $descendants;
+    }
+    
+    public function getSponsoredUsers(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,user_id',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'search' => 'nullable|string'
+            ]);
+            
+            $query = User::where('sponsor_id', $request->user_id);
+            
+            // Apply search filter
+            if ($request->has('search') && $request->search !== '') {
+                $searchTerm = $request->search;
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('user_id', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('name', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('email', 'like', '%' . $searchTerm . '%');
+                });
+            }
+            
+            $perPage = $request->get('per_page', 10);
+            $sponsoredUsers = $query->paginate($perPage);
+            
+            return response()->json([
+                'success' => true,
+                'sponsored_users' => $sponsoredUsers
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'SPONSORED_USERS_ERROR',
+                'message' => 'Failed to fetch sponsored users',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function calculateLevelBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $rootUser = User::where('user_id', $request->user_id)->first();
+            
+            if (!$rootUser) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            $levelBonuses = [];
+            $totalBonus = 0;
+            
+            // Level percentages and expected counts
+            $levelConfig = [
+                1 => ['percentage' => 20, 'expected_count' => 2],
+                2 => ['percentage' => 5, 'expected_count' => 4],
+                3 => ['percentage' => 3, 'expected_count' => 8],
+                4 => ['percentage' => 2, 'expected_count' => 16]
+            ];
+            
+            for ($level = 1; $level <= 4; $level++) {
+                $levelUsers = $this->getUsersByLevel($rootUser, $level);
+                $config = $levelConfig[$level];
+                
+                if (count($levelUsers) >= $config['expected_count']) {
+                    // Get BV values and find minimum
+                    $bvValues = array_map(function($user) { return $user->bv; }, $levelUsers);
+                    $minBv = min($bvValues);
+                    
+                    // Calculate bonus
+                    $bonus = $minBv * ($config['percentage'] / 100);
+                    $totalBonus += $bonus;
+                    
+                    $levelBonuses[] = [
+                        'level' => $level,
+                        'users_count' => count($levelUsers),
+                        'expected_count' => $config['expected_count'],
+                        'min_bv' => $minBv,
+                        'percentage' => $config['percentage'],
+                        'bonus' => $bonus
+                    ];
+                } else {
+                    $levelBonuses[] = [
+                        'level' => $level,
+                        'users_count' => count($levelUsers),
+                        'expected_count' => $config['expected_count'],
+                        'min_bv' => 0,
+                        'percentage' => $config['percentage'],
+                        'bonus' => 0,
+                        'message' => 'Insufficient users at this level'
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'root_user' => $rootUser,
+                'level_bonuses' => $levelBonuses,
+                'total_bonus' => $totalBonus
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'LEVEL_BONUS_ERROR',
+                'message' => 'Failed to calculate level bonus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    private function getUsersByLevel($rootUser, $targetLevel)
+    {
+        $users = [];
+        $this->collectUsersByLevel($rootUser, 0, $targetLevel, $users);
+        return $users;
+    }
+    
+    private function collectUsersByLevel($user, $currentLevel, $targetLevel, &$users)
+    {
+        if (!$user || $currentLevel > $targetLevel) {
+            return;
+        }
+        
+        if ($currentLevel === $targetLevel) {
+            $users[] = $user;
+            return;
+        }
+        
+        // Get direct children and recurse
+        $children = User::where('root_id', $user->user_id)->get();
+        foreach ($children as $child) {
+            $this->collectUsersByLevel($child, $currentLevel + 1, $targetLevel, $users);
+        }
+    }
+    
+    public function processLevelBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $rootUser = User::where('user_id', $request->user_id)->first();
+            
+            if (!$rootUser) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            $levelBonuses = [];
+            $totalBonus = 0;
+            
+            // Level percentages and expected counts
+            $levelConfig = [
+                1 => ['percentage' => 20, 'expected_count' => 2],
+                2 => ['percentage' => 5, 'expected_count' => 4],
+                3 => ['percentage' => 3, 'expected_count' => 8],
+                4 => ['percentage' => 2, 'expected_count' => 16]
+            ];
+            
+            for ($level = 1; $level <= 4; $level++) {
+                $levelUsers = $this->getUsersByLevel($rootUser, $level);
+                $config = $levelConfig[$level];
+                
+                if (count($levelUsers) >= $config['expected_count']) {
+                    // Get BV values and find minimum
+                    $bvValues = array_map(function($user) { return $user->bv; }, $levelUsers);
+                    $minBv = min($bvValues);
+                    
+                    // Calculate bonus
+                    $bonus = $minBv * ($config['percentage'] / 100);
+                    
+                    if ($bonus > 0) {
+                        $oldBv = $rootUser->bv;
+                        $rootUser->increment('bv', $bonus);
+                        $rootUser->refresh();
+                        
+                        // Log BV history with level information
+                        BvHistory::create([
+                            'user_id' => $rootUser->user_id,
+                            'previous_bv' => $oldBv,
+                            'bv_change' => $bonus,
+                            'new_bv' => $rootUser->bv,
+                            'type' => 'credit',
+                            'reason' => 'team_performance_bonus_level_' . $level,
+                            'reference_id' => 'level_' . $level . '_bonus',
+                        ]);
+                        
+                        $totalBonus += $bonus;
+                        
+                        $levelBonuses[] = [
+                            'level' => $level,
+                            'bonus' => $bonus,
+                            'processed' => true
+                        ];
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'root_user' => $rootUser->fresh(),
+                'level_bonuses_processed' => $levelBonuses,
+                'total_bonus_credited' => $totalBonus,
+                'message' => 'Level bonuses processed successfully'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'PROCESS_LEVEL_BONUS_ERROR',
+                'message' => 'Failed to process level bonus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
     
     public function getMlmStructure(Request $request)

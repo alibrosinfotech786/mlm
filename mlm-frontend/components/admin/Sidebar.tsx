@@ -15,10 +15,10 @@ export default function Sidebar() {
 
   // 👉 Load User + Permissions from localStorage
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const permissions = JSON.parse(localStorage.getItem("permissions") || "{}");
 
-    if (user?.role_details?.permissions) {
-      setUserPermissions(user.role_details.permissions);
+    if (permissions) {
+      setUserPermissions(permissions);
     }
   }, []);
 
@@ -105,8 +105,10 @@ export default function Sidebar() {
       name: "Wallet",
       items: [
         { name: "Wallet Request", module: "Wallet Request", href: "/admin/wallet/walletRequest" },
+        { name: "All Wallet Request", module: "All Wallet Request", href: "/admin/wallet/allWalletRequests" },
         { name: "Wallet Status", module: "Wallet Status", href: "/admin/wallet/walletStatus" },
         { name: "Wallet Summary", module: "Wallet Summary", href: "/admin/wallet/walletSummary" },
+        { name: "BV Summary", module: "BV Summary", href: "/admin/wallet/bvSummary" },
       ],
     },
 

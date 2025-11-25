@@ -42,7 +42,9 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     "Matching Income",
     "Sponser Matching Income",
     "Repurchasing Income",
-    "Grievance"
+    "Grievance",
+    "BV Summary",
+    "All Wallet Request",
   ];
 
   const [permissions, setPermissions] = useState<any>([]);

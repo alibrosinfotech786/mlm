@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import Image from "next/image";
+import axiosInstance from "@/app/api/axiosInstance";
+import ProjectApiList from "@/app/api/ProjectApiList";
+import toast from "react-hot-toast";
 
 export default function WalletRequestPage() {
   const [depositBy, setDepositBy] = useState("By UPI");
@@ -11,61 +14,126 @@ export default function WalletRequestPage() {
   const [txnId, setTxnId] = useState("");
   const [remarks, setRemarks] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState(false); // ⬅ Confirmation Modal
+
+  const handleFinalSubmit = async () => {
+    if (!amount || !txnId) {
+      toast.error("Amount & Transaction ID are required.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setConfirmModal(false); // close modal
+
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+
+      formData.append("deposit_by", depositBy);
+      formData.append("deposit_to", depositTo);
+      formData.append("deposit_amount", amount);
+      formData.append("ref_transaction_id", txnId);
+      formData.append("remark", remarks);
+
+      if (file) formData.append("attachment", file);
+
+      const res = await axiosInstance.post(
+        ProjectApiList.WALLET_TRANSACTION_ADD,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("Wallet transaction request submitted!");
+
+        setAmount("");
+        setTxnId("");
+        setRemarks("");
+        setFile(null);
+      }
+    } catch (error: any) {
+      if (error?.response?.data?.errors) {
+        const validationErrors = error.response?.data?.errors;
+        Object.values(validationErrors).forEach((errMsg: any) =>
+          toast.error(errMsg[0])
+        );
+      } else {
+        toast.error("Failed to submit wallet request!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Here you'll later handle API submission
-    console.log({
-      depositBy,
-      depositTo,
-      amount,
-      txnId,
-      remarks,
-      file,
-    });
-    alert("Wallet request submitted!");
+    setConfirmModal(true); // show confirm modal
   };
 
   return (
     <>
       <AdminHeader />
 
-      <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* ===== HEADER ===== */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-green-800">
-                Wallet Request
-              </h1>
-              <p className="text-green-700 text-sm">
-                Submit your deposit details to add funds to your wallet.
-              </p>
+      {/* 🔔 Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white shadow-xl p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-lg font-bold text-green-700 mb-3">
+              Confirm Wallet Request
+            </h2>
+            <p className="text-sm text-gray-700 mb-2">
+              <b>Amount:</b> ₹{amount}
+            </p>
+            <p className="text-sm text-gray-700 mb-4">
+              <b>Transaction ID:</b> {txnId}
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700"
+                onClick={() => setConfirmModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800"
+                onClick={handleFinalSubmit}
+                disabled={loading}
+              >
+                {loading ? "Submitting..." : "Confirm"}
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* ===== FORM ===== */}
+      <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
+        <div className="max-w-6xl mx-auto space-y-2">
+          <h1 className="text-2xl font-bold text-green-800">Wallet Request</h1>
+          <p className="text-green-700 pb-5">Submit deposit details to add funds.</p>
+
           <div className="bg-white shadow-md rounded-xl border border-green-100 p-6">
             <form
               onSubmit={handleSubmit}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
-              {/* ===== LEFT FORM ===== */}
               <div className="md:col-span-2 space-y-5">
                 {/* Deposit By */}
                 <div>
-                  <label
-                    htmlFor="depositBy"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
+                  <label className="block text-sm text-green-800">
                     Deposit By
                   </label>
                   <select
-                    id="depositBy"
                     value={depositBy}
                     onChange={(e) => setDepositBy(e.target.value)}
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
                   >
                     <option>By UPI</option>
                     <option>By Bank Transfer</option>
@@ -75,17 +143,13 @@ export default function WalletRequestPage() {
 
                 {/* Deposit To */}
                 <div>
-                  <label
-                    htmlFor="depositTo"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
+                  <label className="block text-sm text-green-800">
                     Deposit To
                   </label>
                   <select
-                    id="depositTo"
                     value={depositTo}
                     onChange={(e) => setDepositTo(e.target.value)}
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
                   >
                     <option>By Wallet</option>
                     <option>By Account</option>
@@ -94,76 +158,60 @@ export default function WalletRequestPage() {
 
                 {/* Amount */}
                 <div>
-                  <label
-                    htmlFor="amount"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
-                    Deposit Amount
-                  </label>
+                  <label className="block text-sm text-green-800">Deposit Amount</label>
                   <input
-                    id="amount"
                     type="number"
+                    min="1"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter deposit amount"
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (Number(val) >= 0) setAmount(val); // Block negative input in state
+                    }}
+                    placeholder="Enter amount"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()} // Prevent scroll input change
                   />
                 </div>
 
+
                 {/* Transaction ID */}
                 <div>
-                  <label
-                    htmlFor="txnId"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
-                    Trnx. ID / Ref. No
+                  <label className="block text-sm text-green-800">
+                    Trnx. ID / Ref No
                   </label>
                   <input
-                    id="txnId"
                     type="text"
                     value={txnId}
                     onChange={(e) => setTxnId(e.target.value)}
-                    placeholder="Enter transaction ID or reference number"
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    placeholder="Enter transaction ID"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
                   />
                 </div>
 
                 {/* Remarks */}
                 <div>
-                  <label
-                    htmlFor="remarks"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
+                  <label className="block text-sm text-green-800">
                     Remark / Description
                   </label>
                   <textarea
-                    id="remarks"
                     rows={3}
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Enter any additional details..."
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
                   ></textarea>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Message Length: {remarks.length} characters
-                  </p>
                 </div>
 
-                {/* File Upload */}
+                {/* Attachment */}
                 <div>
-                  <label
-                    htmlFor="file"
-                    className="block text-sm font-medium text-green-800 mb-1"
-                  >
+                  <label className="block text-sm text-green-800">
                     Attachment
                   </label>
                   <input
-                    id="file"
                     type="file"
                     onChange={(e) =>
                       setFile(e.target.files ? e.target.files[0] : null)
                     }
-                    className="w-full border border-green-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    className="w-full border border-green-300 rounded-md px-3 py-2"
                   />
                 </div>
 
@@ -171,44 +219,45 @@ export default function WalletRequestPage() {
                 <div>
                   <button
                     type="submit"
-                    className="w-full bg-green-700 text-white py-2 rounded-md font-medium hover:bg-green-800 transition"
+                    disabled={loading}
+                    className="w-full bg-green-700 text-white py-2 rounded-md hover:bg-green-800"
                   >
                     Submit
                   </button>
                 </div>
               </div>
 
-              {/* ===== RIGHT SECTION (BANK DETAILS) ===== */}
-              <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+              {/* Bank Info & Static QR */}
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                 <h3 className="text-lg font-semibold text-red-600 mb-4">
                   Bank Details
                 </h3>
 
-                <div className="flex flex-col items-center">
-                  <Image
-                    src="/images/qr-sample.png" // Replace with your actual QR or bank image
-                    alt="Bank QR Code"
-                    width={100}
-                    height={100}
-                    className="rounded-md border border-gray-300"
-                  />
+                <Image
+                  src="/images/qr.jpg"
+                  alt="QR"
+                  width={140}
+                  height={140}
+                  className="mx-auto rounded-lg border border-green-300 shadow-sm"
+                />
 
-                  <div className="mt-4 text-sm text-green-800 space-y-1 text-center">
-                    <p>
-                      <span className="font-semibold">Bank Name:</span> HDFC Bank
-                    </p>
-                    <p>
-                      <span className="font-semibold">Account No:</span>{" "}
-                      1234567890
-                    </p>
-                    <p>
-                      <span className="font-semibold">IFSC Code:</span> HDFC0001234
-                    </p>
-                    <p>
-                      <span className="font-semibold">UPI ID:</span>{" "}
-                      yourname@hdfcbank
-                    </p>
-                  </div>
+                <p className="text-center text-xs mt-2 text-gray-600">
+                  Scan to Pay via UPI
+                </p>
+
+                <div className="mt-4 text-sm text-green-900 space-y-1 text-center">
+                  <p>
+                    <b>Bank:</b> HDFC Bank
+                  </p>
+                  <p>
+                    <b>Acc No:</b> 1234567890
+                  </p>
+                  <p>
+                    <b>IFSC:</b> HDFC0001234
+                  </p>
+                  <p>
+                    <b>UPI ID:</b> yourname@hdfcbank
+                  </p>
                 </div>
               </div>
             </form>

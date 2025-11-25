@@ -90,7 +90,7 @@ function DataTableInner<T>({
           ) : data.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="py-14 text-center bg-gray-50 text-gray-500">
-                ...
+                No data found
               </td>
             </tr>
           ) : (
@@ -134,7 +134,7 @@ function DataTableInner<T>({
               }
               className="border border-gray-300 bg-white rounded-md px-2 py-1 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
-              {[10, 25, 50, 100].map((n) => (
+              {[5, 10, 25, 50, 100].map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>

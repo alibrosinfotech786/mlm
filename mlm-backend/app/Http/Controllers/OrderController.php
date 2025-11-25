@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
+use App\Models\BvHistory;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -21,8 +23,6 @@ class OrderController extends Controller
                 $query->whereHas('user', function($q) use ($request) {
                     $q->where('user_id', $request->user_id);
                 });
-            } else {
-                $query->where('user_id', $request->user()->id);
             }
             
             $orders = $query->orderBy('created_at', 'desc')->get();
@@ -190,41 +190,94 @@ class OrderController extends Controller
             if ($request->status === 'delivered' && $oldStatus !== 'delivered') {
                 $user = $order->user;
                 $oldBv = $user->bv;
+                $wasActive = $user->isActive;
+                
                 $user->increment('bv', $order->total_bv);
                 $user->refresh();
                 
-                // Credit sponsor with 10% of BV increase if user is not yet active
-                if ($user->sponsor_id && !$user->isActive && $user->bv < 1000) {
+                // Log BV history
+                BvHistory::create([
+                    'user_id' => $user->user_id,
+                    'previous_bv' => $oldBv,
+                    'bv_change' => $order->total_bv,
+                    'new_bv' => $user->bv,
+                    'type' => 'credit',
+                    'reason' => 'order_delivered',
+                    'reference_id' => $order->order_number,
+                ]);
+                
+                $user->updateStatusBasedOnBv();
+                
+                // Credit sponsor with 10% of total BV when user becomes active (reaches 1000 BV)
+                if ($user->sponsor_id && !$wasActive && $user->isActive && $user->bv >= 1000) {
                     $sponsor = User::where('user_id', $user->sponsor_id)->first();
                     if ($sponsor) {
-                        $referralBonus = $order->total_bv * 0.10;
+                        $referralBonus = $user->bv * 0.10;
+                        $sponsorOldBv = $sponsor->bv;
                         $sponsor->increment('bv', $referralBonus);
                         $sponsor->refresh();
+                        
+                        // Log sponsor BV history
+                        BvHistory::create([
+                            'user_id' => $sponsor->user_id,
+                            'previous_bv' => $sponsorOldBv,
+                            'bv_change' => $referralBonus,
+                            'new_bv' => $sponsor->bv,
+                            'type' => 'credit',
+                            'reason' => 'referral_bonus',
+                            'reference_id' => $user->user_id,
+                        ]);
+                        
                         $sponsor->updateStatusBasedOnBv();
                     }
                 }
-                
-                $user->updateStatusBasedOnBv();
             }
             
             // Subtract BV from user when order status changes from delivered to other status
             if ($oldStatus === 'delivered' && $request->status !== 'delivered') {
                 $user = $order->user;
+                $oldBv = $user->bv;
+                $wasActive = $user->isActive;
+                
                 $user->decrement('bv', $order->total_bv);
                 $user->refresh();
                 
+                // Log BV history
+                BvHistory::create([
+                    'user_id' => $user->user_id,
+                    'previous_bv' => $oldBv,
+                    'bv_change' => -$order->total_bv,
+                    'new_bv' => $user->bv,
+                    'type' => 'debit',
+                    'reason' => 'order_cancelled',
+                    'reference_id' => $order->order_number,
+                ]);
+                
+                $user->updateStatusBasedOnBv();
+                
                 // Subtract referral bonus from sponsor if user becomes inactive again
-                if ($user->sponsor_id && !$user->isActive && $user->bv < 1000) {
+                if ($user->sponsor_id && $wasActive && !$user->isActive && $user->bv < 1000) {
                     $sponsor = User::where('user_id', $user->sponsor_id)->first();
                     if ($sponsor) {
-                        $referralBonus = $order->total_bv * 0.10;
+                        $referralBonus = ($user->bv + $order->total_bv) * 0.10;
+                        $sponsorOldBv = $sponsor->bv;
                         $sponsor->decrement('bv', $referralBonus);
                         $sponsor->refresh();
+                        
+                        // Log sponsor BV history
+                        BvHistory::create([
+                            'user_id' => $sponsor->user_id,
+                            'previous_bv' => $sponsorOldBv,
+                            'bv_change' => -$referralBonus,
+                            'new_bv' => $sponsor->bv,
+                            'type' => 'debit',
+                            'reason' => 'referral_bonus_reversal',
+                            'reference_id' => $user->user_id,
+                        ]);
+                        
                         $sponsor->updateStatusBasedOnBv();
                     }
                 }
-                
-                $user->updateStatusBasedOnBv();
             }
 
             return response()->json([
