@@ -42,7 +42,8 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Sponser Matching Income",
     "Repurchasing Income",
     "Grievance",
-    "BV Summary"
+    "BV Summary",
+    "All Wallet Request",
   ];
 
   const [permissions, setPermissions] = useState(

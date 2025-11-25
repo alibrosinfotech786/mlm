@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\BvHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -539,6 +540,203 @@ class UserController extends Controller
                 'success' => false,
                 'error_type' => 'SPONSORED_USERS_ERROR',
                 'message' => 'Failed to fetch sponsored users',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function calculateLevelBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $rootUser = User::where('user_id', $request->user_id)->first();
+            
+            if (!$rootUser) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            $levelBonuses = [];
+            $totalBonus = 0;
+            
+            // Level percentages and expected counts
+            $levelConfig = [
+                1 => ['percentage' => 20, 'expected_count' => 2],
+                2 => ['percentage' => 5, 'expected_count' => 4],
+                3 => ['percentage' => 3, 'expected_count' => 8],
+                4 => ['percentage' => 2, 'expected_count' => 16]
+            ];
+            
+            for ($level = 1; $level <= 4; $level++) {
+                $levelUsers = $this->getUsersByLevel($rootUser, $level);
+                $config = $levelConfig[$level];
+                
+                if (count($levelUsers) >= $config['expected_count']) {
+                    // Get BV values and find minimum
+                    $bvValues = array_map(function($user) { return $user->bv; }, $levelUsers);
+                    $minBv = min($bvValues);
+                    
+                    // Calculate bonus
+                    $bonus = $minBv * ($config['percentage'] / 100);
+                    $totalBonus += $bonus;
+                    
+                    $levelBonuses[] = [
+                        'level' => $level,
+                        'users_count' => count($levelUsers),
+                        'expected_count' => $config['expected_count'],
+                        'min_bv' => $minBv,
+                        'percentage' => $config['percentage'],
+                        'bonus' => $bonus
+                    ];
+                } else {
+                    $levelBonuses[] = [
+                        'level' => $level,
+                        'users_count' => count($levelUsers),
+                        'expected_count' => $config['expected_count'],
+                        'min_bv' => 0,
+                        'percentage' => $config['percentage'],
+                        'bonus' => 0,
+                        'message' => 'Insufficient users at this level'
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'root_user' => $rootUser,
+                'level_bonuses' => $levelBonuses,
+                'total_bonus' => $totalBonus
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'LEVEL_BONUS_ERROR',
+                'message' => 'Failed to calculate level bonus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    private function getUsersByLevel($rootUser, $targetLevel)
+    {
+        $users = [];
+        $this->collectUsersByLevel($rootUser, 0, $targetLevel, $users);
+        return $users;
+    }
+    
+    private function collectUsersByLevel($user, $currentLevel, $targetLevel, &$users)
+    {
+        if (!$user || $currentLevel > $targetLevel) {
+            return;
+        }
+        
+        if ($currentLevel === $targetLevel) {
+            $users[] = $user;
+            return;
+        }
+        
+        // Get direct children and recurse
+        $children = User::where('root_id', $user->user_id)->get();
+        foreach ($children as $child) {
+            $this->collectUsersByLevel($child, $currentLevel + 1, $targetLevel, $users);
+        }
+    }
+    
+    public function processLevelBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $rootUser = User::where('user_id', $request->user_id)->first();
+            
+            if (!$rootUser) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            $levelBonuses = [];
+            $totalBonus = 0;
+            
+            // Level percentages and expected counts
+            $levelConfig = [
+                1 => ['percentage' => 20, 'expected_count' => 2],
+                2 => ['percentage' => 5, 'expected_count' => 4],
+                3 => ['percentage' => 3, 'expected_count' => 8],
+                4 => ['percentage' => 2, 'expected_count' => 16]
+            ];
+            
+            for ($level = 1; $level <= 4; $level++) {
+                $levelUsers = $this->getUsersByLevel($rootUser, $level);
+                $config = $levelConfig[$level];
+                
+                if (count($levelUsers) >= $config['expected_count']) {
+                    // Get BV values and find minimum
+                    $bvValues = array_map(function($user) { return $user->bv; }, $levelUsers);
+                    $minBv = min($bvValues);
+                    
+                    // Calculate bonus
+                    $bonus = $minBv * ($config['percentage'] / 100);
+                    
+                    if ($bonus > 0) {
+                        $oldBv = $rootUser->bv;
+                        $rootUser->increment('bv', $bonus);
+                        $rootUser->refresh();
+                        
+                        // Log BV history with level information
+                        BvHistory::create([
+                            'user_id' => $rootUser->user_id,
+                            'previous_bv' => $oldBv,
+                            'bv_change' => $bonus,
+                            'new_bv' => $rootUser->bv,
+                            'type' => 'credit',
+                            'reason' => 'team_performance_bonus_level_' . $level,
+                            'reference_id' => 'level_' . $level . '_bonus',
+                        ]);
+                        
+                        $totalBonus += $bonus;
+                        
+                        $levelBonuses[] = [
+                            'level' => $level,
+                            'bonus' => $bonus,
+                            'processed' => true
+                        ];
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'root_user' => $rootUser->fresh(),
+                'level_bonuses_processed' => $levelBonuses,
+                'total_bonus_credited' => $totalBonus,
+                'message' => 'Level bonuses processed successfully'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'PROCESS_LEVEL_BONUS_ERROR',
+                'message' => 'Failed to process level bonus',
                 'error' => $e->getMessage()
             ], 500);
         }
