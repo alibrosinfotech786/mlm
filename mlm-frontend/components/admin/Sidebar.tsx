@@ -126,10 +126,10 @@ export default function Sidebar() {
     {
       name: "My Income",
       items: [
-        { name: "Sponser Income", module: "Sponser Income", href: "/admin/Income/sponserIncome" },
+        // { name: "Sponser Income", module: "Sponser Income", href: "/admin/Income/sponserIncome" },
         { name: "Matching Income", module: "Matching Income", href: "/admin/Income/matchingIncome" },
-        { name: "Sponser Matching Income", module: "Sponser Matching Income", href: "/admin/Income/sponserMatchingIncome" },
-        { name: "Repurchasing Income", module: "Repurchasing Income", href: "/admin/Income/repurchasingIncome" },
+        // { name: "Sponser Matching Income", module: "Sponser Matching Income", href: "/admin/Income/sponserMatchingIncome" },
+        // { name: "Repurchasing Income", module: "Repurchasing Income", href: "/admin/Income/repurchasingIncome" },
       ],
     },
 

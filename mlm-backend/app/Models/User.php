@@ -98,6 +98,11 @@ class User extends Authenticatable
         return $this->hasMany(BvHistory::class, 'user_id', 'user_id');
     }
     
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id', 'user_id');
+    }
+    
     public function updateStatusBasedOnBv()
     {
         $isActive = $this->bv >= 1000;

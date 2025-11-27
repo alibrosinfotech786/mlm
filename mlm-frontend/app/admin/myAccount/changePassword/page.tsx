@@ -7,12 +7,11 @@ import ProjectApiList from "@/app/api/ProjectApiList";
 import toast from "react-hot-toast";
 
 export default function ChangePasswordPage() {
-  /* ==========================================================
-      STATES
-  ========================================================== */
+  /* =======================================
+        STATES
+  ======================================= */
   const [loginLoading, setLoginLoading] = useState(false);
   const [transactionLoading, setTransactionLoading] = useState(false);
-  const [transactionExists, setTransactionExists] = useState(false);
 
   const [loginPassword, setLoginPassword] = useState({
     current_password: "",
@@ -26,9 +25,11 @@ export default function ChangePasswordPage() {
     confirm_password: "",
   });
 
-  /* ==========================================================
-      FETCH USER DETAILS
-  ========================================================== */
+  const [transactionExists, setTransactionExists] = useState(false);
+
+  /* =======================================
+        FETCH USER (TO CHECK IF EXISTS)
+  ======================================= */
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -39,11 +40,9 @@ export default function ChangePasswordPage() {
 
         if (res?.data?.success && res.data.users?.length > 0) {
           const user = res.data.users[0];
-
-          // Determine if transaction password exists
           setTransactionExists(!!user.transaction_password);
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to load user details");
       }
     };
@@ -51,147 +50,127 @@ export default function ChangePasswordPage() {
     loadUser();
   }, []);
 
-  /* ==========================================================
-      INPUT HANDLER
-  ========================================================== */
+  /* =======================================
+        INPUT HANDLER
+  ======================================= */
   const handleChange =
     (setState: any) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setState((prev: any) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-/* ==========================================================
-    SUBMIT HANDLER (with current password validation + user_id)
-========================================================== */
-const handleSubmit =
-  (type: "login" | "transaction") => async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* =======================================
+        SUBMIT HANDLER (LOGIN + TRANSACTION)
+  ======================================= */
+  const handleSubmit =
+    (type: "login" | "transaction") => async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    const data =
-      type === "login" ? loginPassword : transactionPassword;
+      const data =
+        type === "login" ? loginPassword : transactionPassword;
 
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = user?.id;
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = user?.id;
 
-    if (!userId) {
-      toast.error("User ID missing — please login again.");
-      return;
-    }
+      if (!userId) {
+        toast.error("User ID missing — please login again.");
+        return;
+      }
 
-    // Check confirm password
-    if (data.new_password !== data.confirm_password) {
-      toast.error("New password and confirm password do not match.");
-      return;
-    }
+      if (data.new_password !== data.confirm_password) {
+        toast.error("New password and confirm password do not match.");
+        return;
+      }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Unauthorized. Please login again.");
-      return;
-    }
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Unauthorized. Please login again.");
+        return;
+      }
 
-    try {
-      /* ------------------------------
-         LOGIN PASSWORD UPDATE
-      ------------------------------ */
-      if (type === "login") {
-        setLoginLoading(true);
+      try {
+        /* ==========================
+            UPDATE LOGIN PASSWORD
+        ========================== */
+        if (type === "login") {
+          setLoginLoading(true);
+
+          const res = await axiosInstance.post(
+            ProjectApiList.UPDATE_USER,
+            {
+              id: userId,
+              current_password: data.current_password,
+              password: data.new_password,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (
+            res?.data?.error ||
+            res?.data?.message?.toLowerCase().includes("incorrect")
+          ) {
+            toast.error("Current login password is incorrect.");
+            setLoginLoading(false);
+            return;
+          }
+
+          if (res?.data?.success) {
+            toast.success("Login password updated successfully!");
+            setLoginPassword({
+              current_password: "",
+              new_password: "",
+              confirm_password: "",
+            });
+          }
+
+          setLoginLoading(false);
+          return;
+        }
+
+        /* ==========================
+            ALWAYS — UPDATE TRANSACTION PASSWORD
+        ========================== */
+        setTransactionLoading(true);
 
         const res = await axiosInstance.post(
-          ProjectApiList.UPDATE_USER,
+          ProjectApiList.SET_TRANSACTION_PASSWORD,
           {
-            id: userId, // <-- REQUIRED
-            current_password: data.current_password,
-            password: data.new_password,
+            user_id: userId,
+            current_transaction_password: data.current_password,
+            transaction_password: data.new_password,
           },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (
           res?.data?.error ||
           res?.data?.message?.toLowerCase().includes("incorrect")
         ) {
-          toast.error("Current password is incorrect.");
-          setLoginLoading(false);
+          toast.error("Current transaction password is incorrect.");
+          setTransactionLoading(false);
           return;
         }
 
         if (res?.data?.success) {
-          toast.success("Login password updated successfully!");
-          setLoginPassword({
+          toast.success("Transaction password updated successfully!");
+          setTransactionPassword({
             current_password: "",
             new_password: "",
             confirm_password: "",
           });
-        } else {
-          toast.error(res?.data?.message || "Failed to update password");
+          setTransactionExists(true);
         }
 
-        setLoginLoading(false);
-        return;
-      }
-
-      /* ------------------------------
-         TRANSACTION PASSWORD UPDATE / CREATE
-      ------------------------------ */
-
-      setTransactionLoading(true);
-
-      const payload = transactionExists
-        ? {
-            user_id: userId, // <-- REQUIRED
-            current_transaction_password: data.current_password,
-            transaction_password: data.new_password,
-          }
-        : {
-            user_id: userId, // <-- REQUIRED
-            transaction_password: data.new_password,
-          };
-
-      const res = await axiosInstance.post(
-        ProjectApiList.SET_TRANSACTION_PASSWORD,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (
-        res?.data?.error ||
-        res?.data?.message?.toLowerCase().includes("incorrect")
-      ) {
-        toast.error("Current Transaction Password is incorrect.");
         setTransactionLoading(false);
-        return;
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || "Something went wrong");
+        if (type === "login") setLoginLoading(false);
+        else setTransactionLoading(false);
       }
+    };
 
-      if (res?.data?.success) {
-        toast.success(
-          transactionExists
-            ? "Transaction password updated!"
-            : "Transaction password created!"
-        );
-
-        setTransactionPassword({
-          current_password: "",
-          new_password: "",
-          confirm_password: "",
-        });
-
-        setTransactionExists(true);
-      } else {
-        toast.error(res?.data?.message || "Failed to update transaction password");
-      }
-
-      setTransactionLoading(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
-      if (type === "login") setLoginLoading(false);
-      else setTransactionLoading(false);
-    }
-  };
-
+  /* =======================================
+        UI
+  ======================================= */
 
   return (
     <>
@@ -199,14 +178,17 @@ const handleSubmit =
 
       <section className="min-h-screen bg-background py-12 px-6 lg:px-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
-          {/* LEFT CARD — CHANGE LOGIN PASSWORD */}
+
+          {/* ================================
+                LEFT — LOGIN PASSWORD
+          ================================ */}
           <div className="bg-white border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-8">
             <h2 className="text-xl font-semibold text-foreground border-b border-border pb-3 mb-6">
               Change Login Password
             </h2>
 
             <form onSubmit={handleSubmit("login")} className="space-y-5">
-              {[
+              {[ 
                 { id: "current_password", label: "Current Password" },
                 { id: "new_password", label: "New Password" },
                 { id: "confirm_password", label: "Confirm New Password" },
@@ -238,31 +220,32 @@ const handleSubmit =
             </form>
           </div>
 
-          {/* RIGHT CARD — TRANSACTION PASSWORD */}
+          {/* ================================
+                RIGHT — TRANSACTION PASSWORD
+          ================================ */}
           <div className="bg-white border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-8">
             <h2 className="text-xl font-semibold text-foreground border-b border-border pb-3 mb-6">
-              {transactionExists
-                ? "Update Transaction Password"
-                : "Create Transaction Password"}
+              Change Transaction Password
             </h2>
 
             <form onSubmit={handleSubmit("transaction")} className="space-y-5">
-              {/* Only show current password input if it already exists */}
-              {transactionExists && (
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    Current Transaction Password
-                  </label>
-                  <input
-                    type="password"
-                    name="current_password"
-                    value={transactionPassword.current_password}
-                    onChange={handleChange(setTransactionPassword)}
-                    className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                  />
-                </div>
-              )}
 
+              {/* ALWAYS SHOW CURRENT PASSWORD */}
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                  Current Transaction Password
+                </label>
+                <input
+                  type="password"
+                  name="current_password"
+                  value={transactionPassword.current_password}
+                  onChange={handleChange(setTransactionPassword)}
+                  required
+                  className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
+                />
+              </div>
+
+              {/* NEW PASSWORD */}
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">
                   New Transaction Password
@@ -277,6 +260,7 @@ const handleSubmit =
                 />
               </div>
 
+              {/* CONFIRM PASSWORD */}
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Confirm Transaction Password
@@ -297,17 +281,12 @@ const handleSubmit =
                   disabled={transactionLoading}
                   className="px-6 py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {transactionLoading
-                    ? transactionExists
-                      ? "Updating..."
-                      : "Creating..."
-                    : transactionExists
-                    ? "Update Transaction Password"
-                    : "Create Transaction Password"}
+                  {transactionLoading ? "Updating..." : "Update Transaction Password"}
                 </button>
               </div>
             </form>
           </div>
+
         </div>
       </section>
     </>

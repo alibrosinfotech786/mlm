@@ -32,12 +32,17 @@ class BvHistoryController extends Controller
     public function show(Request $request)
     {
         try {
-            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            $request->validate([
+                'user_id' => 'required|exists:users,user_id',
+                'per_page' => 'nullable|integer|min:1|max:100'
+            ]);
+            
+            $perPage = $request->get('per_page', 20);
             
             $histories = BvHistory::with('user')
                 ->where('user_id', $request->user_id)
                 ->orderBy('created_at', 'desc')
-                ->paginate(20);
+                ->paginate($perPage);
 
             return response()->json([
                 'success' => true,

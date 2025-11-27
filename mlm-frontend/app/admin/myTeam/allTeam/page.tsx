@@ -39,8 +39,7 @@ export default function AllTeamPage() {
           phone: item.phone || "-",
           sponsorUserId: item.sponsor_id || "-",
           placement: item.position || "-",
-          pv: Number(item.bv) || 0,
-          cbp: Number(item.wallet_balance) || 0,
+          bv: Number(item.bv) || 0,
         }));
 
         setTeamData(formattedData);
@@ -81,8 +80,7 @@ const columns = [
   { key: "phone", label: "Phone" },
   { key: "sponsorUserId", label: "Sponsor ID" },
   { key: "placement", label: "Placement" },
-  { key: "pv", label: "PV" },
-  { key: "cbp", label: "CBP" },
+  { key: "bv", label: "BV" },
 ];
 
 

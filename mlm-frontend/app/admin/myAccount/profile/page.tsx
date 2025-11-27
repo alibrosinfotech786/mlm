@@ -60,10 +60,10 @@ export default function ProfilePage() {
 
   const joinDate = user.created_at
     ? new Date(user.created_at).toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "-";
 
   const sponsorName = user.sponsor_name || "N/A";
@@ -188,10 +188,13 @@ export default function ProfilePage() {
               </div>
 
               <div className="mt-6">
-                <button className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-700 text-white rounded-full font-semibold shadow hover:opacity-90 transition">
-                  View Network
-                </button>
+                <Link href="/admin/myTeam/treeView">
+                  <button className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-700 text-white rounded-full font-semibold shadow hover:opacity-90 transition">
+                    View Network
+                  </button>
+                </Link>
               </div>
+
             </div>
           </div>
 

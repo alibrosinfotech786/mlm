@@ -12,6 +12,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BvHistoryController;
 use App\Http\Controllers\WalletTransactionController;
+use App\Http\Controllers\GrievanceController;
 
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -44,6 +45,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/process-level-bonus', [UserController::class, 'processLevelBonus']);
     Route::get('/users/mlm-structure', [UserController::class, 'getMlmStructure']);
     Route::get('/users/available-positions', [UserController::class, 'getAvailablePosition']);
+    Route::get('/users/bonus-received', [UserController::class, 'getBonusReceived']);
+    // Route::get('/users/team-earnings', [UserController::class, 'getTeamEarnings']);
+    Route::get('/users/team-performance', [UserController::class, 'getTeamPerformance']);
+    Route::get('/users/binary-team-bv', [UserController::class, 'getBinaryTeamBV']);
+    // Route::get('/users/matching-income', [UserController::class, 'getMatchingIncome']);
+    // Route::get('/users/daily-matching-income', [UserController::class, 'getDailyMatchingIncome']);
+    Route::get('/users/level-bonus-reports', [UserController::class, 'getLevelBonusReports']);
+    Route::get('/users/level-bonus-report', [UserController::class, 'getLevelBonusReport']);
+    Route::get('/users/{user_id}/level-bonus-reports', [UserController::class, 'getUserLevelBonusReports']);
+    Route::get('/users/matching-income-reports', [UserController::class, 'getMatchingIncomeReports']);
+    Route::get('/users/{user_id}/matching-income-reports', [UserController::class, 'getUserMatchingIncomeReports']);
 
     // KYC routes
     Route::get('/kyc', [KycController::class, 'index']);
@@ -98,5 +110,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallet-transactions/approve', [WalletTransactionController::class, 'approve']);
     Route::get('/wallet-history', [WalletTransactionController::class, 'walletHistory']);
     Route::post('/wallet-debit', [WalletTransactionController::class, 'debitWallet']);
+    
+    // Grievance routes
+    Route::get('/grievances', [GrievanceController::class, 'index']);
+    Route::post('/grievances/store', [GrievanceController::class, 'store']);
+    Route::get('/grievances/show', [GrievanceController::class, 'show']);
+    Route::post('/grievances/update', [GrievanceController::class, 'update']);
+    Route::post('/grievances/status', [GrievanceController::class, 'updateStatus']);
+    Route::post('/grievances/delete', [GrievanceController::class, 'destroy']);
 });
 

@@ -1,121 +1,118 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 
-interface GrievanceFormData {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (formData: FormData) => void; // pass FormData to parent
+}
+
+type FormValues = {
   subject: string;
   description: string;
   attachment?: FileList;
-}
+};
 
-interface AddGrievanceModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: GrievanceFormData) => void;
-}
-
-export default function AddGrievanceModal({
-  isOpen,
-  onClose,
-  onSubmit,
-}: AddGrievanceModalProps) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<GrievanceFormData>();
-
-  const handleFormSubmit = (data: GrievanceFormData) => {
-    onSubmit(data);
-    reset();
-    onClose();
-  };
+export default function AddGrievanceModal({ isOpen, onClose, onSubmit }: Props) {
+  const { register, handleSubmit, reset } = useForm<FormValues>();
 
   if (!isOpen) return null;
 
+  const submit = (values: FormValues) => {
+    const fd = new FormData();
+    fd.append("subject", values.subject);
+    fd.append("description", values.description);
+    if (values.attachment && values.attachment.length > 0) {
+      fd.append("attachment", values.attachment[0]);
+    }
+    onSubmit(fd);
+    reset();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
-        {/* Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-lg w-full max-w-lg p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-green-700 transition"
+          className="absolute top-3 right-3 text-gray-500 hover:text-green-700"
         >
-          <X size={22} />
+          <X size={20} />
         </button>
 
-        {/* Title */}
-        <h2 className="text-xl font-bold text-green-800 mb-4">
-          Add New Grievance
-        </h2>
+        <h3 className="text-lg font-semibold text-green-800 mb-4">
+          Add Grievance
+        </h3>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          {/* Subject */}
+        <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-green-800 mb-1">
-              Subject <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-sm text-green-800 mb-1">Subject</label>
             <input
-              {...register("subject", { required: "Subject is required" })}
-              type="text"
-              placeholder="Enter grievance subject"
-              className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              {...register("subject", { required: true })}
+              className="w-full border border-green-300 rounded px-3 py-2"
+              placeholder="Subject"
+              required
             />
-            {errors.subject && (
-              <p className="text-red-600 text-xs mt-1">
-                {errors.subject.message}
-              </p>
-            )}
           </div>
 
-          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-green-800 mb-1">
-              Description <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-sm text-green-800 mb-1">Description</label>
             <textarea
-              {...register("description", { required: "Description is required" })}
+              {...register("description", { required: true })}
+              className="w-full border border-green-300 rounded px-3 py-2"
               rows={4}
-              placeholder="Write your grievance details..."
-              className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:outline-none"
-            ></textarea>
-            {errors.description && (
-              <p className="text-red-600 text-xs mt-1">
-                {errors.description.message}
-              </p>
-            )}
+              placeholder="Describe your issue"
+              required
+            />
           </div>
 
           {/* Attachment */}
-          <div>
-            <label className="block text-sm font-medium text-green-800 mb-1">
-              Attachment (optional)
-            </label>
-            <input
-              {...register("attachment")}
-              type="file"
-              className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none file:mr-3 file:py-1 file:px-3 file:border-0 file:rounded-md file:bg-green-700 file:text-white hover:file:bg-green-600 transition"
-            />
-          </div>
+<div>
+  <label className="block text-sm text-green-800 mb-1">Attachment (optional)</label>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-3 pt-3">
+  <div className="relative w-full">
+    <input
+      {...register("attachment")}
+      type="file"
+      id="fileUpload"
+      accept=".jpg,.jpeg,.png,.pdf"
+      className="hidden"
+    />
+
+    <label
+      htmlFor="fileUpload"
+      className="
+        flex items-center justify-center 
+        w-full border border-green-300 
+        rounded-lg px-4 py-2 cursor-pointer
+        bg-green-600 text-white font-medium 
+        hover:bg-green-700 transition
+      "
+    >
+      📁 Choose File
+    </label>
+  </div>
+
+  <p className="text-xs text-gray-500 mt-1">Max 2MB • jpg, jpeg, png, pdf</p>
+</div>
+
+
+          <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-md border border-green-300 text-green-800 hover:bg-green-50 transition"
+              onClick={() => {
+                reset();
+                onClose();
+              }}
+              className="px-4 py-2 border rounded text-green-700"
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-sm rounded-md bg-green-700 text-white font-medium hover:bg-green-600 transition"
-            >
-              Submit Grievance
+
+            <button type="submit" className="px-4 py-2 bg-green-700 text-white rounded">
+              Submit
             </button>
           </div>
         </form>

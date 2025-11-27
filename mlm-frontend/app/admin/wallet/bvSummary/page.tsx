@@ -28,24 +28,31 @@ export default function BvSummary() {
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
+
   const [data, setData] = useState<BvHistory[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [currentBV, setCurrentBV] = useState(0); // ⭐ NEW
+  const [currentBV, setCurrentBV] = useState(0);
+
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
       const parsed = JSON.parse(user);
-      fetchBvHistory(parsed.user_id);
+      setUserId(parsed.user_id);
     }
-  }, [page]);
+  }, []);
 
-  const fetchBvHistory = async (user_id: string) => {
+  // Fetch BV history (with pagination)
+  const fetchBvHistory = async () => {
+    if (!userId) return;
+
     try {
       setLoading(true);
+
       const res = await axiosInstance.get(
-        `${ProjectApiList.api_getBVHistoryofUser}?user_id=${user_id}&page=${page}`
+        `${ProjectApiList.api_getBVHistoryofUser}?user_id=${userId}&per_page=${entries}&page=${page}`
       );
 
       const histories = res?.data?.histories;
@@ -54,16 +61,20 @@ export default function BvSummary() {
       setData(result);
       setTotalPages(histories?.last_page || 1);
 
-      // 🟢 Set Current BV (latest record — first index)
+      // Set latest BV
       if (result.length > 0) {
         setCurrentBV(parseFloat(result[0].new_bv));
       }
-    } catch (error) {
-      console.error("BV History Fetch Error:", error);
+    } catch (err) {
+      console.log("BV History Fetch Error:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchBvHistory();
+  }, [page, entries, userId]);
 
   const columns: Column<TableRow>[] = [
     { key: "tranDate", label: "Tran Date" },
@@ -97,6 +108,7 @@ export default function BvSummary() {
     },
   ];
 
+  // Convert API → Table
   const mappedData: TableRow[] = data.map((item) => {
     const crAmount = item.type === "credit" ? parseFloat(item.bv_change) : 0;
     const drAmount = item.type === "debit" ? Math.abs(parseFloat(item.bv_change)) : 0;
@@ -110,6 +122,7 @@ export default function BvSummary() {
     };
   });
 
+  // Search filter
   const filteredData = mappedData.filter(
     (row) =>
       row.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -126,7 +139,7 @@ export default function BvSummary() {
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
 
-          {/* 🟢 Current BV Balance Card */}
+          {/* Current BV Card */}
           <div className="bg-white shadow-md rounded-xl p-4 border border-green-200">
             <p className="text-green-700 font-medium">Current BV</p>
             <h2 className="text-3xl font-bold text-green-800">{currentBV} BV</h2>
@@ -143,7 +156,10 @@ export default function BvSummary() {
             entries={entries}
             search={search}
             onSearchChange={setSearch}
-            onEntriesChange={setEntries}
+            onEntriesChange={(val) => {
+              setEntries(val);
+              setPage(1);
+            }}
             onPrevious={handlePrevious}
             onNext={handleNext}
             emptyMessage="No BV history found"

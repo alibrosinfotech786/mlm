@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Notifications\WelcomeUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -62,6 +63,14 @@ class AuthController extends Controller
             }
 
             $user = User::create($userData);
+            
+            // Send welcome email
+            try {
+                $user->notify(new WelcomeUser($user));
+            } catch (Exception $e) {
+                // Log email error but don't fail registration
+                \Log::warning('Failed to send welcome email: ' . $e->getMessage());
+            }
 
             $token = $user->createToken('auth_token')->plainTextToken;
 

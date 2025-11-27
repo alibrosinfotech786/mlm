@@ -77,6 +77,9 @@ export default function TreeViewPage() {
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <h1 className="text-3xl font-bold text-green-800 mb-4">Tree View</h1>
+
+
           {/*==================== Search + Details ====================*/}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -102,6 +105,16 @@ export default function TreeViewPage() {
                   className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800"
                 >
                   Search
+                </button>
+                <button
+                  onClick={() => {
+                    const user = JSON.parse(localStorage.getItem("user") || "{}");
+                    setSearchId(user.user_id || "");
+                    fetchTree(user.user_id);
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+                >
+                  Reset
                 </button>
               </div>
             </div>

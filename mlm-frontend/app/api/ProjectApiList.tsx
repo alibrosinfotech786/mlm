@@ -68,6 +68,31 @@ const ProjectApiList = {
   WALLET_TRANSACTION_LIST: `${BASE_URL}/wallet-transactions`,
   WALLET_TRANSACTION_APPROVE: `${BASE_URL}/wallet-transactions/approve`,
   WALLET_TRANSACTION_SUMMARY: `${BASE_URL}/wallet-history`,
+
+
+  // GRIEVANCES  
+  GRIEVANCES_LIST: `${BASE_URL}/grievances`,
+  GRIEVANCE_STORE: `${BASE_URL}/grievances/store`,
+  GRIEVANCE_SHOW: `${BASE_URL}/grievances/show`,
+  GRIEVANCE_UPDATE: `${BASE_URL}/grievances/update`,
+  GRIEVANCE_STATUS: `${BASE_URL}/grievances/status`,
+  GRIEVANCE_DELETE: `${BASE_URL}/grievances/delete`,
+  
+  
+    // Direct Business Report   
+    BONUS_RECEIVED: `${BASE_URL}/users/bonus-received`,
+    TEAM_PERFORMANCE: `${BASE_URL}/users/team-performance`,
+    BINARY_TEAM_BV: `${BASE_URL}/users/binary-team-bv`,
+    
+    // My Income
+    MATCHING_INCOME: `${BASE_URL}/users/daily-matching-income`,
+
+
+
+
+
+
+
 };
 
 export default ProjectApiList;
