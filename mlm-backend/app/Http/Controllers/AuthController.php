@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Mail\WelcomeEmail;
+use App\Mail\WelcomeLetterEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -64,6 +67,14 @@ class AuthController extends Controller
             $user = User::create($userData);
 
             $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Send welcome email
+            try {
+                Mail::to($user->email)->send(new WelcomeEmail($user));
+            } catch (Exception $mailException) {
+                // Log email error but don't fail registration
+                \Log::error('Welcome email failed to send: ' . $mailException->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -283,6 +294,28 @@ class AuthController extends Controller
                 'success' => false,
                 'error_type' => 'TRANSACTION_PASSWORD_ERROR',
                 'message' => 'Failed to set transaction password',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendWelcomeLetter(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            // Send welcome letter email
+            Mail::to($user->email)->send(new WelcomeLetterEmail($user));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Welcome letter sent successfully to ' . $user->email
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'EMAIL_SEND_ERROR',
+                'message' => 'Failed to send welcome letter email',
                 'error' => $e->getMessage()
             ], 500);
         }

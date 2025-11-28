@@ -324,14 +324,42 @@ class UserController extends Controller
     public function showByUserId(Request $request)
     {
         try {
-            $request->validate(['user_id' => 'required|string']);
-            $user = User::with(['sponsor', 'downlines'])->where('user_id', $request->user_id)->first();
+            $request->validate([
+                'user_id' => 'nullable|string',
+                'email' => 'nullable|email'
+            ]);
+            
+            // Check if at least one parameter is provided
+            if (!$request->has('user_id') && !$request->has('email')) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'VALIDATION_ERROR',
+                    'message' => 'Either user_id or email is required'
+                ], 422);
+            }
+            
+            $query = User::with(['sponsor', 'downlines']);
+            
+            // Search by user_id if provided
+            if ($request->has('user_id') && $request->user_id) {
+                $query->where('user_id', $request->user_id);
+            }
+            
+            // Search by email if provided
+            if ($request->has('email') && $request->email) {
+                $query->where('email', $request->email);
+            }
+            
+            $user = $query->first();
             
             if (!$user) {
+                $searchBy = $request->has('user_id') && $request->user_id ? 'user_id' : 'email';
+                $searchValue = $request->has('user_id') && $request->user_id ? $request->user_id : $request->email;
+                
                 return response()->json([
                     'success' => false,
                     'error_type' => 'USER_NOT_FOUND',
-                    'message' => 'User not found with this user_id'
+                    'message' => "User not found with this {$searchBy}: {$searchValue}"
                 ], 404);
             }
             

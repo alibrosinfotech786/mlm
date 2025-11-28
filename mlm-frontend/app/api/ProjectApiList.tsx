@@ -5,6 +5,7 @@ const ProjectApiList = {
   USER: `${BASE_URL}/user`,
   LOGIN: `${BASE_URL}/login`,
   REGISTER: `${BASE_URL}/register`,
+  SEND_WELCOME_LETTER: `${BASE_URL}/send-welcome-letter`,
 
   // KYC api
   KYC_STORE: `${BASE_URL}/kyc/store`,

@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function WelcomeLetter() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   /* ==========================================================
       FETCH USER DETAILS
@@ -53,6 +54,36 @@ export default function WelcomeLetter() {
 
     loadUser();
   }, []);
+
+  /* ==========================================================
+      SEND WELCOME LETTER EMAIL
+  ========================================================== */
+  const handleSendEmail = async () => {
+    try {
+      setSendingEmail(true);
+      const token = localStorage.getItem("token");
+
+      const res = await axiosInstance.post(
+        ProjectApiList.SEND_WELCOME_LETTER,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res?.data?.success) {
+        toast.success(res.data.message || "Welcome letter sent successfully!");
+      } else {
+        toast.error(res.data.message || "Failed to send welcome letter");
+      }
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to send welcome letter email"
+      );
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -151,13 +182,22 @@ export default function WelcomeLetter() {
           </div>
         </div>
 
-        {/* Print Button */}
-        <button
-          onClick={() => window.print()}
-          className="fixed bottom-5 right-5 z-50 px-5 py-2 bg-green-600 text-white rounded-md shadow-md hover:bg-green-700 transition print:hidden"
-        >
-          🖨️ Print Letter
-        </button>
+        {/* Action Buttons */}
+        <div className="fixed bottom-5 right-5 z-50 flex gap-3 print:hidden">
+          <button
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+            className="px-5 py-2 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {sendingEmail ? "Sending..." : "📧 Send Email"}
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="px-5 py-2 bg-green-600 text-white rounded-md shadow-md hover:bg-green-700 transition"
+          >
+            🖨️ Print Letter
+          </button>
+        </div>
       </section>
     </>
   );
