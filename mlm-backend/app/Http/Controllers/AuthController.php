@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Models\Role;
 use App\Mail\WelcomeEmail;
 use App\Mail\WelcomeLetterEmail;
+use App\Mail\IdCardEmail;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -303,9 +306,22 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
-            // Send welcome letter email
-            Mail::to($user->email)->send(new WelcomeLetterEmail($user));
+
+            // Render welcome letter HTML into PDF using Dompdf
+            $html = view('emails.welcome-letter', ['user' => $user])->render();
+
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfData = $dompdf->output();
+
+            // Send welcome letter email with PDF attachment
+            Mail::to($user->email)->send(new WelcomeLetterEmail($user, $pdfData));
 
             return response()->json([
                 'success' => true,
@@ -317,6 +333,40 @@ class AuthController extends Controller
                 'error_type' => 'EMAIL_SEND_ERROR',
                 'message' => 'Failed to send welcome letter email',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendIdCard(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            // Render ID card view into PDF using Dompdf directly
+            $html = view('emails.id-card-attachment', ['user' => $user])->render();
+
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfData = $dompdf->output();
+
+            Mail::to($user->email)->send(new IdCardEmail($user, $pdfData));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ID Card sent successfully to ' . $user->email,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'ID_CARD_EMAIL_ERROR',
+                'message' => 'Failed to send ID Card email',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

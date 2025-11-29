@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function IDCard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   /* ==========================================================
       FETCH USER DETAILS
@@ -155,13 +156,48 @@ export default function IDCard() {
           </div>
         </div>
 
-        {/* Print Button */}
-        <button
-          onClick={() => window.print()}
-          className="fixed bottom-5 right-5 z-50 px-4 py-2 bg-green-600 text-white rounded-md shadow-lg hover:bg-green-700 transition-all print:hidden cursor-pointer"
-        >
-          🖨️ Print ID Card
-        </button>
+        {/* Action Buttons */}
+        <div className="fixed bottom-5 right-5 z-50 flex gap-3 print:hidden">
+          <button
+            onClick={async () => {
+              try {
+                setSendingEmail(true);
+                const token = localStorage.getItem("token");
+                const res = await axiosInstance.post(
+                  ProjectApiList.SEND_ID_CARD,
+                  {},
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+                if (res?.data?.success) {
+                  toast.success(
+                    res.data.message || "ID Card sent successfully to your email"
+                  );
+                } else {
+                  toast.error(res.data.message || "Failed to send ID Card email");
+                }
+              } catch (err: any) {
+                toast.error(
+                  err?.response?.data?.message ||
+                    "Failed to send ID Card email"
+                );
+              } finally {
+                setSendingEmail(false);
+              }
+            }}
+            disabled={sendingEmail}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md shadow-lg hover:bg-blue-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {sendingEmail ? "Sending..." : "📧 Send Email"}
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-green-600 text-white rounded-md shadow-lg hover:bg-green-700 transition-all cursor-pointer"
+          >
+            🖨️ Print ID Card
+          </button>
+        </div>
       </section>
     </>
   );

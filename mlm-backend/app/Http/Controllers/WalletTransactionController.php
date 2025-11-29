@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\WalletTransaction;
 use App\Models\WalletHistory;
 use App\Models\User;
+use App\Mail\WalletRequestEmail;
+use App\Mail\WalletStatusUpdateEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -67,6 +70,17 @@ class WalletTransactionController extends Controller
             }
 
             $transaction = WalletTransaction::create($data);
+            
+            // Load user relationship
+            $user = $request->user();
+            
+            // Send email notification
+            try {
+                Mail::to($user->email)->send(new WalletRequestEmail($transaction, $user));
+            } catch (Exception $e) {
+                // Log email error but don't fail the request
+                \Log::error('Wallet request email failed to send: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -145,6 +159,17 @@ class WalletTransactionController extends Controller
                 'status_updated_by' => $request->user()->user_id,
                 'status_updated_at' => now()
             ]);
+            $transaction->refresh();
+
+            // Send email notification to user's email
+            if ($user && $user->email) {
+                try {
+                    Mail::to($user->email)->send(new WalletStatusUpdateEmail($transaction, $user, $oldStatus, $request->status));
+                } catch (Exception $e) {
+                    // Log email error but don't fail the request
+                    \Log::error('Wallet status update email failed to send: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,

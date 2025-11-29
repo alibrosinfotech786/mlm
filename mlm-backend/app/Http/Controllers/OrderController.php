@@ -7,7 +7,10 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\BvHistory;
+use App\Mail\OrderConfirmationEmail;
+use App\Mail\OrderStatusUpdateEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
@@ -115,6 +118,15 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Send order confirmation email to logged-in user's email
+            try {
+                $orderWithItems = $order->load('orderItems');
+                \Mail::to($request->user()->email)->send(new OrderConfirmationEmail($orderWithItems));
+            } catch (Exception $mailException) {
+                // Log but don't fail the order if email sending fails
+                \Log::error('Failed to send order confirmation email: ' . $mailException->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'order' => $order->load('orderItems'),
@@ -182,9 +194,18 @@ class OrderController extends Controller
                 'status' => 'required|in:pending,confirmed,shipped,delivered,cancelled'
             ]);
 
-            $order = Order::with('user')->findOrFail($request->id);
+            $order = Order::with(['user', 'orderItems'])->findOrFail($request->id);
             $oldStatus = $order->status;
             $order->update(['status' => $request->status]);
+            $order->refresh();
+            
+            // Send email notification to billing_email
+            try {
+                Mail::to($order->billing_email)->send(new OrderStatusUpdateEmail($order, $oldStatus, $request->status));
+            } catch (Exception $e) {
+                // Log email error but don't fail the request
+                \Log::error('Order status update email failed to send: ' . $e->getMessage());
+            }
             
             // Add BV to user when order status changes to delivered
             if ($request->status === 'delivered' && $oldStatus !== 'delivered') {

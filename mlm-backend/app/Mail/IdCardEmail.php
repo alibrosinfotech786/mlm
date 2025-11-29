@@ -7,7 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeLetterEmail extends Mailable
+class IdCardEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -23,11 +23,11 @@ class WelcomeLetterEmail extends Mailable
     public function build()
     {
         return $this
-            ->subject('Welcome Letter - Tathastu Ayurveda Pvt Ltd')
-            ->view('emails.welcome-letter')
+            ->subject('Your ID Card - Tathastu Ayurveda')
+            ->view('emails.id-card-email-body')
             ->attachData(
                 $this->pdfData,
-                'Welcome_Letter_' . ($this->user->user_id ?? 'user') . '.pdf',
+                'IDCard_' . ($this->user->user_id ?? 'user') . '.pdf',
                 ['mime' => 'application/pdf']
             );
     }

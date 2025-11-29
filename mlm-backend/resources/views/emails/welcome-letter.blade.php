@@ -10,12 +10,23 @@
         body, table, td {font-family: Arial, sans-serif !important;}
     </style>
     <![endif]-->
+    <style>
+        /* Help Dompdf render full width on A4 without cutting the right side */
+        @page {
+            margin: 20mm 15mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f5f5f0; font-family: Arial, sans-serif;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f0; padding: 20px 0;">
         <tr>
             <td align="center">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="540" style="width: 100%; max-width: 540px; background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     
                     <!-- Decorative Top Border -->
                     <tr>
@@ -36,7 +47,7 @@
                                         </p>
                                     </td>
                                     <td style="vertical-align: top; text-align: right; width: 90px; padding-left: 20px;">
-                                        <img src="{{ config('app.url') }}/images/logo.png" alt="Tathastu Ayurveda Logo" width="90" height="90" style="display: block; max-width: 90px; height: auto; border: 0;" />
+                                        <img src="https://www.tathastuayurveda.world/images/logo.png" alt="Tathastu Ayurveda Logo" width="90" height="90" style="display: block; max-width: 90px; height: auto; border: 0;" />
                                     </td>
                                 </tr>
                             </table>
