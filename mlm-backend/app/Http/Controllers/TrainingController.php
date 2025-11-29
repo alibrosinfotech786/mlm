@@ -44,9 +44,16 @@ class TrainingController extends Controller
                 'course_fee' => 'nullable|numeric|min:0',
                 'syllabus' => 'nullable|array',
                 'level' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $training = Training::create($request->all());
+            $data = $request->except(['image']);
+            
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('trainings', 'public');
+            }
+
+            $training = Training::create($data);
 
             return response()->json([
                 'success' => true,
@@ -141,10 +148,17 @@ class TrainingController extends Controller
                 'course_fee' => 'nullable|numeric|min:0',
                 'syllabus' => 'nullable|array',
                 'level' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             $training = Training::findOrFail($request->id);
-            $training->update($request->except('id'));
+            $data = $request->except(['id', 'image']);
+            
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('trainings', 'public');
+            }
+            
+            $training->update($data);
 
             return response()->json([
                 'success' => true,

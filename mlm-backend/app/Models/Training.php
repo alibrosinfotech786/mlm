@@ -20,6 +20,7 @@ class Training extends Model
         'course_fee',
         'syllabus',
         'level',
+        'image',
     ];
 
     protected function casts(): array

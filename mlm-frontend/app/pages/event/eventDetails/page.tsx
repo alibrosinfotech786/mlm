@@ -55,6 +55,16 @@ function EventDetailsContent() {
     router.push(`/admin/events/joinEvents?event_id=${event.id}`);
   }
 
+  // Format Date
+  function formatDate(iso?: string) {
+    if (!iso) return "-";
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
   if (loading) {
     return (
       <>
@@ -78,6 +88,11 @@ function EventDetailsContent() {
       </>
     );
   }
+
+  // 🔥 Check event is future or past
+  const today = new Date();
+  const eventDate = new Date(event.date);
+  const isFutureEvent = eventDate >= today;
 
   return (
     <>
@@ -110,9 +125,6 @@ function EventDetailsContent() {
                   alt="Event Banner"
                   className="w-full h-72 md:h-80 object-cover rounded-xl border shadow-sm"
                 />
-                {/* <p className="text-center text-sm text-gray-500 mt-2">
-                  Banner Image
-                </p> */}
               </div>
 
               {/* Gallery */}
@@ -122,9 +134,6 @@ function EventDetailsContent() {
                   alt="Event Gallery"
                   className="w-full h-72 md:h-80 object-cover rounded-xl border shadow-sm"
                 />
-                {/* <p className="text-center text-sm text-gray-500 mt-2">
-                  Gallery Image
-                </p> */}
               </div>
             </div>
           </div>
@@ -187,13 +196,22 @@ function EventDetailsContent() {
 
           {/* JOIN CTA */}
           <div className="text-center">
-            <Button
-              className="px-8 py-3 rounded-full bg-green-700 text-white hover:bg-green-800"
-              onClick={() => setOpenJoinModal(true)}
-            >
-              Join Event
-            </Button>
+
+            {isFutureEvent ? (
+              <Button
+                className="px-8 py-3 rounded-full bg-green-700 text-white hover:bg-green-800"
+                onClick={() => setOpenJoinModal(true)}
+              >
+                Join Event
+              </Button>
+            ) : (
+              <span className="px-6 py-2 bg-gray-300 text-gray-700 rounded-full text-sm font-semibold">
+                Event Completed
+              </span>
+            )}
+
           </div>
+
         </div>
       </section>
 
@@ -243,13 +261,4 @@ function InfoRow({ label, value }: { label: string; value: string | number }) {
       <span className="text-gray-800">{value}</span>
     </div>
   );
-}
-
-function formatDate(iso?: string) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }

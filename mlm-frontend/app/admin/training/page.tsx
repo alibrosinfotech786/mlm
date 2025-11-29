@@ -16,8 +16,17 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import Image from "next/image";
+
+const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
+
+// resolve path
+function resolveImage(path?: string) {
+  if (!path) return "/images/no-image.png";
+  return `${BASE}/storage/${path}`.replace(/([^:]\/)\/+/g, "$1");
+}
 
 export default function TrainingsPage() {
   const [trainings, setTrainings] = useState<any[]>([]);
@@ -26,11 +35,9 @@ export default function TrainingsPage() {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [openJoinModal, setOpenJoinModal] = useState(false);
 
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
 
-  // ⭐ Updated form with LEVEL
   const [form, setForm] = useState<any>({
     id: "",
     date: "",
@@ -40,48 +47,32 @@ export default function TrainingsPage() {
     venue: "",
     duration: "",
     description: "",
+    level: "",
     course_fee: "",
-    level: "",          // ⭐ added
-    syllabus: [""],
+    image: null,
   });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
 
   const today = new Date().toISOString().split("T")[0];
-  const userData =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "{}")
-      : {};
-  const userId = userData?.user_id ?? null;
 
   async function fetchTrainings() {
     try {
       setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.training);
 
-      const enhanced = res.data.trainings.map((t: any) => {
-        const participants = t.participants || [];
-        const participantsCount = participants.length;
-
-        return {
-          ...t,
-          participantsCount,
-          isJoined: participants.some(
-            (p: any) => String(p.user_id) === String(userId)
-          ),
-          syllabus: Array.isArray(t.syllabus)
-            ? t.syllabus
-            : t.syllabus
-            ? [t.syllabus]
-            : [],
-        };
-      });
+      const enhanced = res.data.trainings.map((t: any) => ({
+        ...t,
+        participantsCount: t?.participants?.length || 0,
+      }));
 
       setTrainings(enhanced);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to load trainings");
+    } catch {
+      toast.error("Failed to load trainings");
     } finally {
       setLoading(false);
     }
@@ -91,42 +82,35 @@ export default function TrainingsPage() {
     fetchTrainings();
   }, []);
 
-  function validateForm() {
-    if (!form.date) return "Date is required";
-    if (!form.time) return "Time is required";
-    if (!form.topic) return "Topic is required";
-    if (!form.trainer) return "Trainer is required";
-    if (!form.venue) return "Venue is required";
-    if (!form.duration) return "Duration is required";
-    if (!form.description) return "Description is required";
-    if (!form.level) return "Level is required";
-    if (form.course_fee === "" || isNaN(Number(form.course_fee)))
-      return "Course fee must be valid";
-    return null;
+  function handleImageChange(e: any) {
+    const file = e.target.files[0];
+    if (file) {
+      setForm({ ...form, image: file });
+      setPreviewImage(URL.createObjectURL(file));
+    }
   }
 
+  /**========== CREATE TRAINING (FormData) ==========*/
   async function handleCreateTraining(e: any) {
     e.preventDefault();
-    const errMsg = validateForm();
-    if (errMsg) return toast.error(errMsg);
+
+    const fd = new FormData();
+    fd.append("date", form.date);
+    fd.append("time", form.time);
+    fd.append("topic", form.topic);
+    fd.append("trainer", form.trainer);
+    fd.append("venue", form.venue);
+    fd.append("duration", form.duration);
+    fd.append("description", form.description);
+    fd.append("level", form.level);
+    fd.append("course_fee", form.course_fee);
+
+    if (form.image) fd.append("image", form.image);
 
     try {
-      const payload = {
-        date: form.date,
-        time: form.time,
-        topic: form.topic,
-        trainer: form.trainer,
-        venue: form.venue,
-        duration: form.duration,
-        description: form.description,
-        level: form.level,                         // ⭐ added
-        course_fee: Number(form.course_fee),
-        syllabus: form.syllabus
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length),
-      };
-
-      await axiosInstance.post(ProjectApiList.createTraining, payload);
+      await axiosInstance.post(ProjectApiList.createTraining, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       toast.success("Training created!");
       setOpenCreateModal(false);
@@ -147,53 +131,58 @@ export default function TrainingsPage() {
       venue: "",
       duration: "",
       description: "",
-      level: "",              // ⭐ reset
+      level: "",
       course_fee: "",
-      syllabus: [""],
+      image: null,
     });
+    setPreviewImage(null);
   }
 
+  /**========== OPEN EDIT MODAL ==========*/
   function openEdit(training: any) {
     setSelectedTraining(training);
+
     setForm({
       id: training.id,
-      date: training.date?.split("T")[0] || "",
-      time: training.time || "",
-      topic: training.topic || "",
-      trainer: training.trainer || "",
-      venue: training.venue || "",
-      duration: training.duration || "",
-      description: training.description || "",
-      level: training.level || "",        // ⭐ added
-      course_fee: training.course_fee ?? "",
-      syllabus: Array.isArray(training.syllabus)
-        ? training.syllabus
-        : [training.syllabus],
+      date: training.date?.split("T")[0],
+      time: training.time,
+      topic: training.topic,
+      trainer: training.trainer,
+      venue: training.venue,
+      duration: training.duration,
+      description: training.description,
+      level: training.level,
+      course_fee: training.course_fee,
+      image: null,
     });
+
+    setPreviewImage(resolveImage(training.image));
     setOpenEditModal(true);
   }
 
+  /**========== UPDATE TRAINING (FormData) ==========*/
   async function handleUpdateTraining(e: any) {
     e.preventDefault();
-    const errMsg = validateForm();
-    if (errMsg) return toast.error(errMsg);
+
+    const fd = new FormData();
+    fd.append("id", form.id);
+    fd.append("date", form.date);
+    fd.append("time", form.time);
+    fd.append("topic", form.topic);
+    fd.append("trainer", form.trainer);
+    fd.append("venue", form.venue);
+    fd.append("duration", form.duration);
+    fd.append("description", form.description);
+    fd.append("level", form.level);
+    fd.append("course_fee", form.course_fee);
+
+    if (form.image) fd.append("image", form.image);
 
     try {
-      const payload = {
-        id: form.id,
-        date: form.date,
-        time: form.time,
-        topic: form.topic,
-        trainer: form.trainer,
-        venue: form.venue,
-        duration: form.duration,
-        description: form.description,
-        level: form.level,                // ⭐ added
-        course_fee: Number(form.course_fee),
-        syllabus: form.syllabus.map((s: string) => s.trim()),
-      };
+      await axiosInstance.post(ProjectApiList.updateTraining, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      await axiosInstance.post(ProjectApiList.updateTraining, payload);
       toast.success("Training updated!");
       setOpenEditModal(false);
       fetchTrainings();
@@ -202,11 +191,7 @@ export default function TrainingsPage() {
     }
   }
 
-  function openDelete(training: any) {
-    setSelectedTraining(training);
-    setOpenDeleteModal(true);
-  }
-
+  /**========== DELETE TRAINING ==========*/
   async function handleDeleteTraining() {
     try {
       await axiosInstance.post(ProjectApiList.deleteTraining, {
@@ -217,30 +202,10 @@ export default function TrainingsPage() {
       setOpenDeleteModal(false);
       fetchTrainings();
     } catch {
-      toast.error("Delete failed");
+      toast.error("Failed to delete");
     }
   }
 
-  function openJoin(training: any) {
-    setSelectedTraining(training);
-    setOpenJoinModal(true);
-  }
-
-  async function handleJoinTraining() {
-    try {
-      await axiosInstance.post(ProjectApiList.joinTraining, {
-        training_id: selectedTraining.id,
-      });
-
-      toast.success("Joined training!");
-      setOpenJoinModal(false);
-      fetchTrainings();
-    } catch {
-      toast.error("Joining failed");
-    }
-  }
-
-  // ⭐ TABLE COLUMNS (includes LEVEL)
   const columns = [
     {
       key: "sno",
@@ -251,49 +216,46 @@ export default function TrainingsPage() {
     {
       key: "date",
       label: "Date",
-      render: (value: string) =>
-        value ? value.split("T")[0].split("-").reverse().join("-") : "-",
+      render: (value: string) => value.split("T")[0],
     },
     { key: "time", label: "Time" },
     { key: "topic", label: "Topic" },
-
-    // ⭐ NEW LEVEL COLUMN
-    {
-      key: "level",
-      label: "Level",
-      render: (v: any) => v || "-",
-    },
-
     { key: "trainer", label: "Trainer" },
     { key: "venue", label: "Venue" },
     { key: "duration", label: "Duration" },
-
+    { key: "level", label: "Level" },
     {
       key: "course_fee",
       label: "Fee",
-      render: (v: any) => `₹${Number(v).toLocaleString()}`,
+      render: (v: any) => `₹${v}`,
     },
     {
-      key: "participantsCount",
-      label: "Participants",
-      render: (v: number) => (
-        <span className="font-semibold text-blue-600">{v}</span>
-      ),
+      key: "image",
+      label: "Image",
+      render: (v: any) =>
+        v ? (
+          <img
+            src={resolveImage(v)}
+            className="w-12 h-12 rounded object-cover"
+          />
+        ) : (
+          "-"
+        ),
     },
     {
       key: "actions",
       label: "Actions",
       render: (_: any, row: any) => (
-        <div className="flex gap-3">
-          <button
-            className="text-blue-600"
-            onClick={() => openEdit(row)}
-          >
+        <div className="flex items-center gap-3">
+          <button className="text-blue-600" onClick={() => openEdit(row)}>
             Edit
           </button>
           <button
             className="text-red-600"
-            onClick={() => openDelete(row)}
+            onClick={() => {
+              setSelectedTraining(row);
+              setOpenDeleteModal(true);
+            }}
           >
             Delete
           </button>
@@ -302,36 +264,16 @@ export default function TrainingsPage() {
     },
   ];
 
-  const filtered = trainings.filter(
-    (t: any) =>
-      (t.topic || "").toLowerCase().includes(search.toLowerCase()) ||
-      (t.trainer || "").toLowerCase().includes(search.toLowerCase())
+  const filtered = trainings.filter((t: any) =>
+    t.topic.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / entries));
+  const totalPages = Math.ceil(filtered.length / entries);
+
   const paginatedData = filtered.slice(
     (page - 1) * entries,
     (page - 1) * entries + entries
   );
-
-  function addModule() {
-    setForm({
-      ...form,
-      syllabus: [...form.syllabus, ""],
-    });
-  }
-
-  function updateModule(i: number, value: string) {
-    const updated = [...form.syllabus];
-    updated[i] = value;
-    setForm({ ...form, syllabus: updated });
-  }
-
-  function removeModule(i: number) {
-    const updated = [...form.syllabus];
-    updated.splice(i, 1);
-    setForm({ ...form, syllabus: updated.length ? updated : [""] });
-  }
 
   return (
     <>
@@ -339,12 +281,14 @@ export default function TrainingsPage() {
 
       <section className="py-10 px-6">
         <div className="max-w-7xl mx-auto space-y-6">
+
+          {/* HEADER */}
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold">Trainings</h1>
+            <h1 className="text-xl font-semibold">Trainings</h1>
 
             <Dialog open={openCreateModal} onOpenChange={setOpenCreateModal}>
               <DialogTrigger asChild>
-                <Button>+ Create</Button>
+                <Button className="bg-green-600 text-white">+ Add Training</Button>
               </DialogTrigger>
 
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -354,109 +298,44 @@ export default function TrainingsPage() {
 
                 <form onSubmit={handleCreateTraining} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <InputBox
-                      label="Date"
-                      type="date"
-                      name="date"
-                      form={form}
-                      setForm={setForm}
-                      min={today}
-                    />
-                    <InputBox
-                      label="Time"
-                      type="time"
-                      name="time"
-                      form={form}
-                      setForm={setForm}
-                    />
-                    <InputBox
-                      label="Topic"
-                      type="text"
-                      name="topic"
-                      form={form}
-                      setForm={setForm}
-                    />
-                    <InputBox
-                      label="Trainer"
-                      type="text"
-                      name="trainer"
-                      form={form}
-                      setForm={setForm}
-                    />
-                    <InputBox
-                      label="Venue"
-                      type="text"
-                      name="venue"
-                      form={form}
-                      setForm={setForm}
-                    />
-                    <InputBox
-                      label="Duration"
-                      type="text"
-                      name="duration"
-                      form={form}
-                      setForm={setForm}
-                    />
-
-                    {/* ⭐ LEVEL FIELD */}
-                    <InputBox
-                      label="Level"
-                      type="text"
-                      name="level"
-                      form={form}
-                      setForm={setForm}
-                      placeholder="Beginner / Intermediate / Advanced"
-                    />
-
-                    <InputBox
-                      label="Course Fee (INR)"
-                      type="number"
-                      name="course_fee"
-                      form={form}
-                      setForm={setForm}
-                    />
+                    <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} min={today} />
+                    <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
+                    <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
+                    <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
+                    <InputBox label="Venue" type="text" name="venue" form={form} setForm={setForm} />
+                    <InputBox label="Duration" type="text" name="duration" form={form} setForm={setForm} />
+                    <InputBox label="Level" type="text" name="level" form={form} setForm={setForm} placeholder="Beginner / Intermediate" />
+                    <InputBox label="Course Fee (INR)" type="number" name="course_fee" form={form} setForm={setForm} />
                   </div>
 
                   <textarea
                     rows={3}
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
                     className="w-full border rounded-md p-2"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Description"
-                    required
                   />
 
-                  {/* ⭐ DYNAMIC SYLLABUS */}
-                  <div>
-                    <div className="flex justify-between">
-                      <label>Syllabus Modules</label>
-                      <button
-                        type="button"
-                        className="text-green-700"
-                        onClick={addModule}
-                      >
-                        + Add Module
-                      </button>
-                    </div>
+                  {/* IMAGE UPLOAD */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium">Training Banner (Image)</label>
 
-                    {form.syllabus.map((m: string, idx: number) => (
-                      <div key={idx} className="flex gap-2 my-2">
-                        <input
-                          value={m}
-                          onChange={(e) => updateModule(idx, e.target.value)}
-                          className="flex-1 border p-2 rounded-md"
-                        />
-                        <button
-                          type="button"
-                          className="text-red-600"
-                          onClick={() => removeModule(idx)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="border rounded-md p-2"
+                    />
+
+                    {previewImage && (
+                      <Image
+                        src={previewImage}
+                        alt="preview"
+                        width={200}
+                        height={150}
+                        className="rounded-md mt-2 border"
+                      />
+                    )}
                   </div>
 
                   <DialogFooter>
@@ -470,6 +349,7 @@ export default function TrainingsPage() {
             </Dialog>
           </div>
 
+          {/* TABLE */}
           <DataTable
             columns={columns}
             data={paginatedData}
@@ -480,14 +360,14 @@ export default function TrainingsPage() {
             onEntriesChange={setEntries}
             page={page}
             totalPages={totalPages}
-            onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-            emptyMessage="No trainings"
+            onPrevious={() => setPage(Math.max(1, page - 1))}
+            onNext={() => setPage(Math.min(totalPages, page + 1))}
+            emptyMessage="No trainings found"
           />
         </div>
       </section>
 
-      {/* ⭐ EDIT MODAL */}
+      {/* EDIT MODAL */}
       <Dialog open={openEditModal} onOpenChange={setOpenEditModal}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -496,7 +376,7 @@ export default function TrainingsPage() {
 
           <form onSubmit={handleUpdateTraining} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} min={today} />
+              <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} />
               <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
               <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
               <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
@@ -508,33 +388,25 @@ export default function TrainingsPage() {
 
             <textarea
               rows={3}
+              className="w-full border rounded-md p-2"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border rounded-md p-2"
-              required
             />
 
-            {/* syllabus */}
+            {/* IMAGE UPLOAD */}
             <div>
-              <div className="flex justify-between">
-                <label>Syllabus Modules</label>
-                <button type="button" className="text-green-700" onClick={addModule}>
-                  + Add Module
-                </button>
-              </div>
+              <label className="text-sm font-medium">Training Image</label>
+              <input type="file" onChange={handleImageChange} className="border p-2 rounded-md w-full" />
 
-              {form.syllabus.map((m: string, idx: number) => (
-                <div key={idx} className="flex gap-2 my-2">
-                  <input
-                    value={m}
-                    onChange={(e) => updateModule(idx, e.target.value)}
-                    className="flex-1 border p-2 rounded-md"
-                  />
-                  <button type="button" className="text-red-600" onClick={() => removeModule(idx)}>
-                    Remove
-                  </button>
-                </div>
-              ))}
+              {previewImage && (
+                <Image
+                  src={previewImage}
+                  alt="preview"
+                  width={200}
+                  height={150}
+                  className="rounded-md mt-2 border"
+                />
+              )}
             </div>
 
             <DialogFooter>
@@ -547,35 +419,17 @@ export default function TrainingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DELETE */}
+      {/* DELETE MODAL */}
       <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Training</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete this?</p>
+          <p>Are you sure you want to delete this training?</p>
+
           <DialogFooter>
             <Button className="bg-red-600 text-white" onClick={handleDeleteTraining}>
               Delete
-            </Button>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* JOIN */}
-      <Dialog open={openJoinModal} onOpenChange={setOpenJoinModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Join Training</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to join {selectedTraining?.topic}?</p>
-
-          <DialogFooter>
-            <Button onClick={handleJoinTraining} className="bg-green-600 text-white">
-              Yes, Join
             </Button>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
@@ -587,7 +441,7 @@ export default function TrainingsPage() {
   );
 }
 
-function InputBox({ label, type, name, placeholder = "", form, setForm, min }: any) {
+function InputBox({ label, type, name, form, setForm, placeholder = "", min }: any) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium">{label}</label>
@@ -596,8 +450,8 @@ function InputBox({ label, type, name, placeholder = "", form, setForm, min }: a
         min={min}
         placeholder={placeholder}
         required
-        className="border rounded-md p-2"
-        value={form[name]}
+        className="border p-2 rounded-md"
+        value={form[name] ?? ""}
         onChange={(e) => setForm({ ...form, [name]: e.target.value })}
       />
     </div>
