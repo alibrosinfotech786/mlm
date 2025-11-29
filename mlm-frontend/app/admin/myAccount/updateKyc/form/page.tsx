@@ -1,7 +1,7 @@
 // app/admin/myAccount/updateKyc/form/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -14,18 +14,15 @@ import SectionTitle from "@/components/forms/SectionTitle";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 
-export default function KycFormPage() {
+function KycFormContent() {
   const router = useRouter();
-  const mode = useSearchParams()?.get("mode") || "add"; // add | edit
+  const mode = useSearchParams()?.get("mode") || "add";
   const isAddMode = mode === "add";
 
   const [loading, setLoading] = useState(true);
   const [kycDetail, setKycDetail] = useState<any | null>(null);
   const [preview, setPreview] = useState<Record<string, string | null>>({});
 
-  /* ==========================================================
-     YUP VALIDATION
-  ========================================================== */
   const fileRequired = isAddMode
     ? yup.mixed().required("This file is required")
     : yup.mixed().notRequired();
@@ -89,9 +86,6 @@ export default function KycFormPage() {
     formState: { errors, isSubmitting },
   } = useForm({ resolver: yupResolver(schema) });
 
-  /* ==========================================================
-     LOAD KYC IF EDIT MODE
-  ========================================================== */
   useEffect(() => {
     const loadKyc = async () => {
       setLoading(true);
@@ -145,9 +139,6 @@ export default function KycFormPage() {
     loadKyc();
   }, [mode, reset]);
 
-  /* ==========================================================
-     PREVIEW ON FILE CHANGE
-  ========================================================== */
   const watchFiles: any = watch();
   useEffect(() => {
     ["aadhar_front", "aadhar_back", "pan_card", "cancelled_cheque"].forEach(
@@ -161,9 +152,6 @@ export default function KycFormPage() {
     );
   }, [watchFiles]);
 
-  /* ==========================================================
-     SUBMIT
-  ========================================================== */
   const onSubmit = async (data: any) => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -201,9 +189,6 @@ export default function KycFormPage() {
     }
   };
 
-  /* ==========================================================
-     FILE PREVIEW COMPONENT
-  ========================================================== */
   const DocPreview = ({ src }: { src: string | null }) => {
     if (!src)
       return <p className="text-xs text-gray-400">No file selected</p>;
@@ -220,9 +205,6 @@ export default function KycFormPage() {
     );
   };
 
-  /* ==========================================================
-     CUSTOM FILE INPUT COMPONENT
-  ========================================================== */
   function FileInput({ label, name }: any) {
     return (
       <div>
@@ -242,7 +224,6 @@ export default function KycFormPage() {
           className="hidden"
         />
 
-        {/* File Name */}
         {typeof window !== "undefined" &&
           (document.getElementById(name) as any)?.files?.length > 0 && (
             <p className="text-xs text-gray-600 mt-1">
@@ -253,15 +234,11 @@ export default function KycFormPage() {
             </p>
           )}
 
-        {/* Error */}
         <p className="text-red-500 text-xs">{getError(name)}</p>
       </div>
     );
   }
 
-  /* ==========================================================
-     UI
-  ========================================================== */
   return (
     <>
       <AdminHeader />
@@ -285,7 +262,6 @@ export default function KycFormPage() {
             <p className="text-center text-sm py-10">Loading...</p>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              {/* Personal Details */}
               <SectionTitle title="Personal Details" />
               <div className="grid grid-cols-2 gap-4">
                 {[["Full Name", "full_name"],
@@ -310,7 +286,6 @@ export default function KycFormPage() {
                   </div>
                 ))}
 
-                {/* Status */}
                 <div>
                   <label className="text-xs">Status</label>
                   <select
@@ -324,7 +299,6 @@ export default function KycFormPage() {
                 </div>
               </div>
 
-              {/* Documents */}
               <SectionTitle title="Documents" />
 
               <div className="grid grid-cols-2 gap-6">
@@ -336,8 +310,6 @@ export default function KycFormPage() {
                 ].map(([label, key]: any) => (
                   <div key={key}>
                     <FileInput label={label} name={key} />
-
-                    {/* Preview */}
                     <div className="mt-2">
                       <DocPreview src={preview[key]} />
                     </div>
@@ -345,7 +317,6 @@ export default function KycFormPage() {
                 ))}
               </div>
 
-              {/* Submit Buttons */}
               <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
@@ -374,5 +345,13 @@ export default function KycFormPage() {
         </div>
       </section>
     </>
+  );
+}
+
+export default function KycFormPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <KycFormContent />
+    </Suspense>
   );
 }

@@ -13,8 +13,8 @@ export default function OurTeamPage() {
       <section className="relative w-full flex justify-center items-center bg-background pt-8">
         <div className="relative w-[85%] h-40 md:h-52 lg:h-64 rounded-xl overflow-hidden shadow-lg">
           <Image
-            src="/images/teambanner.png" // 🖼️ Your banner image
-            alt="Products Banner"
+            src="/images/teambanner.png"
+            alt="Team Banner"
             fill
             className="object-cover object-center"
             priority

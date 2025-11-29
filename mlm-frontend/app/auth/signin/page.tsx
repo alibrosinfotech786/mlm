@@ -138,17 +138,17 @@ export default function SignInPage() {
 
               {/* Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
-                <Link
+                {/* <Link
                   href="#"
                   className="w-full sm:w-1/2 text-center py-2 rounded-full bg-blue-500 text-white font-semibold shadow hover:opacity-90 transition"
                 >
                   Forgot Password
-                </Link>
+                </Link> */}
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-1/2 py-2 rounded-full bg-green-600 text-white font-semibold shadow hover:opacity-90 transition disabled:opacity-50"
+                  className="w-full  py-2 rounded-full bg-green-600 text-white font-semibold shadow hover:opacity-90 transition disabled:opacity-50"
                 >
                   {isSubmitting ? "Signing In..." : "Sign In"}
                 </button>

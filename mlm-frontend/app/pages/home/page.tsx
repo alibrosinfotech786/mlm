@@ -8,6 +8,7 @@ import SuccessStories from "./components/SuccessStories";
 import Footer from "@/components/layout/Footer";
 import Slider from "./components/Slider";
 import TrainingCourses from "./components/TrainingCourses";
+import EventCardsSection from "./components/EventCardsSection";
 
 export default function HomePage() {
   return (
@@ -20,6 +21,7 @@ export default function HomePage() {
       {/* <ProductCarousel /> */}
       <Banner />
       <SuccessStories />
+      <EventCardsSection />
       <TrainingCourses />
       <Footer />
 

@@ -1,26 +1,36 @@
 "use client";
 
-// import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     router.push("/auth/signin");
-  //   }
-  // }, [isAuthenticated, router]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      router.push("/auth/signin");
+      return;
+    }
+    
+    setIsAuthenticated(true);
+    setIsLoading(false);
+  }, [router]);
 
-  // if (!isAuthenticated) {
-  //   return (
-  //     <div className="h-screen flex items-center justify-center text-muted-foreground">
-  //       Redirecting to Sign In...
-  //     </div>
-  //   );
-  // }
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center text-muted-foreground">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return <>{children}</>;
 }

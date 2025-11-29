@@ -41,9 +41,21 @@ class EventController extends Controller
                 'city' => 'required|string|max:255',
                 'state' => 'required|string|max:255',
                 'leader' => 'required|string|max:255',
+                'image1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $event = Event::create($request->all());
+            $data = $request->except(['image1', 'image2']);
+            
+            if ($request->hasFile('image1')) {
+                $data['image1'] = $request->file('image1')->store('events', 'public');
+            }
+            
+            if ($request->hasFile('image2')) {
+                $data['image2'] = $request->file('image2')->store('events', 'public');
+            }
+
+            $event = Event::create($data);
 
             return response()->json([
                 'success' => true,
@@ -83,6 +95,30 @@ class EventController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'EVENT_NOT_FOUND',
+                'message' => 'Event not found'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'EVENT_FETCH_ERROR',
+                'message' => 'Failed to fetch event',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function showById($id)
+    {
+        try {
+            $event = Event::with('participants')->findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'event' => $event
+            ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
@@ -187,10 +223,22 @@ class EventController extends Controller
                 'city' => 'string|max:255',
                 'state' => 'string|max:255',
                 'leader' => 'string|max:255',
+                'image1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             $event = Event::findOrFail($request->id);
-            $event->update($request->except('id'));
+            $data = $request->except(['id', 'image1', 'image2']);
+            
+            if ($request->hasFile('image1')) {
+                $data['image1'] = $request->file('image1')->store('events', 'public');
+            }
+            
+            if ($request->hasFile('image2')) {
+                $data['image2'] = $request->file('image2')->store('events', 'public');
+            }
+            
+            $event->update($data);
 
             return response()->json([
                 'success' => true,

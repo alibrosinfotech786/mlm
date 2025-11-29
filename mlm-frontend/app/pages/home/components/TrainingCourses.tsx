@@ -36,7 +36,7 @@ const TrainingCourses = () => {
         {
             id: 4,
             title: "Business Growth & Mentorship Sessions",
-          image: "/slider/slider3.jpeg",
+            image: "/slider/slider3.jpeg",
             description:
                 "Learn business strategies, team building, prospecting, and duplication to grow a strong organization.",
         },
@@ -50,7 +50,7 @@ const TrainingCourses = () => {
         {
             id: 6,
             title: "Communication & Soft Skills Training",
-           image: "/slider/slider3.jpeg",
+            image: "/slider/slider3.jpeg",
             description:
                 "Improve your communication, body language, presentation skills, and professional etiquette.",
         },
@@ -60,7 +60,7 @@ const TrainingCourses = () => {
         <section className="py-16 bg-background font-sans">
             <div className="container mx-auto px-6 md:px-12 lg:px-24">
                 <h2 className="text-2xl md:text-3xl font-semibold text-primary mb-10 text-center tracking-wide">
-                    Training & Education Courses
+                    Training & Certification
                 </h2>
 
                 <Carousel className="w-full max-w-7xl mx-auto">
@@ -87,11 +87,13 @@ const TrainingCourses = () => {
                                             {course.description.slice(0, 80)}...
                                         </p>
                                         <a
-                                            href="/pages/training"
-                                            className="text-sm text-primary hover:text-gray-400 font-medium mt-2 transition"
+                                            href={`/pages/training/courseDetails?course_id=${course.id}`}
+                                            className="text-sm text-primary hover:text-primary/80 font-medium mt-2 transition"
+                                            target=""
                                         >
-                                            Read More
+                                            Read More →
                                         </a>
+
                                     </div>
                                 </div>
                             </CarouselItem>

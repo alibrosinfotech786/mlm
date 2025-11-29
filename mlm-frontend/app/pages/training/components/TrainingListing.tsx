@@ -76,6 +76,7 @@ export default function TrainingListing() {
               <th className="px-4 py-3 border-b border-border">Trainer</th>
               <th className="px-4 py-3 border-b border-border">Venue</th>
               <th className="px-4 py-3 border-b border-border">Duration</th>
+              <th className="px-4 py-3 border-b border-border text-center">View Details</th>
               <th className="px-4 py-3 border-b border-border text-center">Action</th>
             </tr>
           </thead>
@@ -110,6 +111,16 @@ export default function TrainingListing() {
                   <td className="px-4 py-3">{t.trainer}</td>
                   <td className="px-4 py-3">{t.venue}</td>
                   <td className="px-4 py-3">{t.duration}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <a
+                      href={`/pages/training/courseDetails?course_id=${t.id}`}
+                      target=""
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      View Details
+                    </a>
+                  </td>
 
                   <td className="px-4 py-3 text-center">
                     <button

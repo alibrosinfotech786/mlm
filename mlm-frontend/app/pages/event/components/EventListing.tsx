@@ -80,6 +80,7 @@ export default function EventListing() {
               <th className="px-4 py-3 border-b border-border">City</th>
               <th className="px-4 py-3 border-b border-border">State</th>
               <th className="px-4 py-3 border-b border-border">Leader</th>
+              <th className="px-4 py-3 border-b border-border">View Details</th>
               <th className="px-4 py-3 border-b border-border text-center">
                 Action
               </th>
@@ -118,6 +119,16 @@ export default function EventListing() {
                   <td className="px-4 py-3">{event.state}</td>
                   <td className="px-4 py-3 text-primary font-semibold">
                     {event.leader}
+                  </td>
+                  <td className="px-4 py-3 text-primary font-semibold">
+                    <a
+                      href={`/pages/event/eventDetails?event_id=${event.id}`}
+                      target=""
+                      className="text-blue-600 hover:text-blue-800 underline font-medium"
+                    >
+                      View Details
+                    </a>
+
                   </td>
 
                   <td className="px-4 py-3 text-center">

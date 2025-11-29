@@ -9,11 +9,13 @@ import { Menu, X, User } from "lucide-react";
 
 const navItems = [
   { name: "Home", href: "/" },
+  { name: "About Us", href: "/pages/aboutUs" },
   { name: "Events", href: "/pages/event" },
   { name: "Training", href: "/pages/training" },
   { name: "Products", href: "/pages/products" },
   { name: "Our Team", href: "/pages/ourTeam" },
   { name: "Gallery", href: "/pages/gallery" },
+  { name: "Contact Us", href: "/pages/contactUs" },
 ];
 
 export default function Header() {

@@ -16,7 +16,19 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+
+// 🔥 BASE URL for images
+const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
+
+// 🔥 SAFELY RESOLVE IMAGE URL
+function resolveImage(path: string | null) {
+  if (!path) return "/images/no-image.png";
+
+  return `${BASE}/storage/${path}`.replace(/([^:]\/)\/+/g, "$1");
+}
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
@@ -28,7 +40,6 @@ export default function EventsPage() {
 
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
-  // SAME STRUCTURE AS TRAININGS PAGE
   const [form, setForm] = useState<any>({
     id: "",
     date: "",
@@ -38,7 +49,12 @@ export default function EventsPage() {
     city: "",
     state: "",
     leader: "",
+    image1: null,
+    image2: null,
   });
+
+  const [preview1, setPreview1] = useState<string | null>(null);
+  const [preview2, setPreview2] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
@@ -46,7 +62,6 @@ export default function EventsPage() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // FETCH EVENTS
   async function fetchEvents() {
     try {
       setLoading(true);
@@ -62,56 +77,88 @@ export default function EventsPage() {
     fetchEvents();
   }, []);
 
+  // ====================
+  // IMAGE UPLOAD HANDLER
+  // ====================
+  function handleImageChange(e: any, field: "image1" | "image2") {
+    const file = e.target.files[0];
+
+    if (file) {
+      setForm({ ...form, [field]: file });
+
+      const url = URL.createObjectURL(file);
+      if (field === "image1") setPreview1(url);
+      if (field === "image2") setPreview2(url);
+    }
+  }
+
+  // ====================
   // CREATE EVENT
+  // ====================
   async function handleCreateEvent(e: any) {
     e.preventDefault();
+
+    const fd = new FormData();
+    Object.keys(form).forEach((key) => {
+      if (form[key]) fd.append(key, form[key]);
+    });
+
     try {
-      await axiosInstance.post(ProjectApiList.createEvent, form);
+      await axiosInstance.post(ProjectApiList.createEvent, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       toast.success("Event created!");
 
-      // Reset
-      setForm({
-        id: "",
-        date: "",
-        time: "",
-        venue: "",
-        address: "",
-        city: "",
-        state: "",
-        leader: "",
-      });
-
       setOpenCreateModal(false);
+      resetForm();
       fetchEvents();
     } catch {
       toast.error("Failed to create event");
     }
   }
 
-  // OPEN EDIT
+  // ====================
+  // EDIT EVENT
+  // ====================
   function openEdit(data: any) {
     setSelectedEvent(data);
 
     setForm({
       id: data.id,
-      date: data?.date?.includes("T") ? data.date.split("T")[0] : data.date,
-      time: data.time || "",
-      venue: data.venue || "",
-      address: data.address || "",
-      city: data.city || "",
-      state: data.state || "",
-      leader: data.leader || "",
+      date: data?.date?.split("T")[0],
+      time: data.time,
+      venue: data.venue,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      leader: data.leader,
+      image1: null,
+      image2: null,
     });
+
+    setPreview1(resolveImage(data.image1));
+    setPreview2(resolveImage(data.image2));
 
     setOpenEditModal(true);
   }
 
+  // ====================
   // UPDATE EVENT
+  // ====================
   async function handleUpdateEvent(e: any) {
     e.preventDefault();
+
+    const fd = new FormData();
+    Object.keys(form).forEach((key) => {
+      if (form[key]) fd.append(key, form[key]);
+    });
+
     try {
-      await axiosInstance.post(ProjectApiList.updateEvent, form);
+      await axiosInstance.post(ProjectApiList.updateEvent, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       toast.success("Event updated!");
 
       setOpenEditModal(false);
@@ -121,7 +168,9 @@ export default function EventsPage() {
     }
   }
 
+  // ====================
   // DELETE EVENT
+  // ====================
   async function handleDeleteEvent() {
     try {
       await axiosInstance.post(ProjectApiList.deleteEvent, {
@@ -129,6 +178,7 @@ export default function EventsPage() {
       });
 
       toast.success("Event deleted!");
+
       setOpenDeleteModal(false);
       fetchEvents();
     } catch {
@@ -136,7 +186,27 @@ export default function EventsPage() {
     }
   }
 
-  // COLUMNS
+  function resetForm() {
+    setForm({
+      id: "",
+      date: "",
+      time: "",
+      venue: "",
+      address: "",
+      city: "",
+      state: "",
+      leader: "",
+      image1: null,
+      image2: null,
+    });
+
+    setPreview1(null);
+    setPreview2(null);
+  }
+
+  // ====================
+  // TABLE COLUMNS
+  // ====================
   const columns = [
     {
       key: "sno",
@@ -149,9 +219,8 @@ export default function EventsPage() {
       label: "Date",
       render: (value: string) => {
         if (!value) return "-";
-        const d = value.split("T")[0];
-        const [y, m, d2] = d.split("-");
-        return `${d2}-${m}-${y}`;
+        const [y, m, d] = value.split("T")[0].split("-");
+        return `${d}-${m}-${y}`;
       },
     },
     { key: "time", label: "Time" },
@@ -160,15 +229,31 @@ export default function EventsPage() {
     { key: "city", label: "City" },
     { key: "state", label: "State" },
     { key: "leader", label: "Leader" },
+
+    // 🔥 UPDATED: SAFE IMAGE RESOLVER
     {
-      key: "participants",
-      label: "Participants",
-      render: (_: any, row: any) => (
-        <span className="font-semibold text-blue-600">
-          {row.participants?.length || 0}
-        </span>
+      key: "image1",
+      label: "Banner",
+      render: (value: string) => (
+        <img
+          src={resolveImage(value)}
+          className="w-14 h-14 rounded-md object-cover"
+          alt="banner"
+        />
       ),
     },
+    {
+      key: "image2",
+      label: "Gallery",
+      render: (value: string) => (
+        <img
+          src={resolveImage(value)}
+          className="w-14 h-14 rounded-md object-cover"
+          alt="gallery"
+        />
+      ),
+    },
+
     {
       key: "actions",
       label: "Actions",
@@ -199,16 +284,13 @@ export default function EventsPage() {
     (ev: any) =>
       ev.city.toLowerCase().includes(search.toLowerCase()) ||
       ev.state.toLowerCase().includes(search.toLowerCase()) ||
-      ev.leader.toLowerCase().includes(search.toLowerCase())
+      ev.leader.toLowerCase().includes(search.toLowerCase()) ||
+      ev.venue.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalPages = Math.ceil(filtered.length / entries);
   const start = (page - 1) * entries;
   const paginatedData = filtered.slice(start, start + entries);
-
-  const handlePrev = () => setPage((p) => Math.max(p - 1, 1));
-  const handleNext = () =>
-    setPage((p) => Math.min(p + 1, totalPages || 1));
 
   return (
     <>
@@ -216,24 +298,23 @@ export default function EventsPage() {
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
+
+          {/* HEADER */}
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-green-800">Events</h1>
-              <p className="text-green-700 text-sm">
-                Create and manage events
-              </p>
+              <p className="text-green-700 text-sm">Create and manage events</p>
             </div>
 
-            {/* CREATE */}
+            {/* CREATE MODAL */}
             <Dialog open={openCreateModal} onOpenChange={setOpenCreateModal}>
               <DialogTrigger asChild>
                 <Button className="bg-green-700 text-white hover:bg-green-800">
-                  + Create Event
+                  + Add Event
                 </Button>
               </DialogTrigger>
 
-              <DialogContent forceMount>
+              <DialogContent className="max-h-[90vh] overflow-y-auto custom-scroll">
                 <DialogHeader>
                   <DialogTitle>Create Event</DialogTitle>
                 </DialogHeader>
@@ -249,6 +330,20 @@ export default function EventsPage() {
                     <InputBox label="Leader" type="text" name="leader" form={form} setForm={setForm} />
                   </div>
 
+                  {/* IMAGE UPLOAD */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <ImageUpload
+                      label="Banner Image (image1)"
+                      onChange={(e: any) => handleImageChange(e, "image1")}
+                      preview={preview1}
+                    />
+                    <ImageUpload
+                      label="Gallery Image (image2)"
+                      onChange={(e: any) => handleImageChange(e, "image2")}
+                      preview={preview2}
+                    />
+                  </div>
+
                   <DialogFooter>
                     <Button type="submit">Create</Button>
                     <DialogClose asChild>
@@ -260,9 +355,9 @@ export default function EventsPage() {
             </Dialog>
           </div>
 
-          {/* EDIT */}
+          {/* EDIT MODAL */}
           <Dialog open={openEditModal} onOpenChange={setOpenEditModal}>
-            <DialogContent forceMount>
+            <DialogContent className="max-h-[90vh] overflow-y-auto custom-scroll">
               <DialogHeader>
                 <DialogTitle>Edit Event</DialogTitle>
               </DialogHeader>
@@ -278,6 +373,20 @@ export default function EventsPage() {
                   <InputBox label="Leader" type="text" name="leader" form={form} setForm={setForm} />
                 </div>
 
+                {/* IMAGE UPLOAD */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ImageUpload
+                    label="Banner Image (image1)"
+                    onChange={(e: any) => handleImageChange(e, "image1")}
+                    preview={preview1}
+                  />
+                  <ImageUpload
+                    label="Gallery Image (image2)"
+                    onChange={(e: any) => handleImageChange(e, "image2")}
+                    preview={preview2}
+                  />
+                </div>
+
                 <DialogFooter>
                   <Button type="submit">Update</Button>
                   <DialogClose asChild>
@@ -288,22 +397,17 @@ export default function EventsPage() {
             </DialogContent>
           </Dialog>
 
-          {/* DELETE */}
+          {/* DELETE MODAL */}
           <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
-            <DialogContent forceMount>
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Delete Event</DialogTitle>
               </DialogHeader>
 
-              <p className="text-gray-700">
-                Are you sure want to delete this event?
-              </p>
+              <p>Are you sure you want to delete this event?</p>
 
-              <DialogFooter className="mt-4">
-                <Button
-                  className="bg-red-600 text-white"
-                  onClick={handleDeleteEvent}
-                >
+              <DialogFooter>
+                <Button className="bg-red-600 text-white" onClick={handleDeleteEvent}>
                   Delete
                 </Button>
                 <DialogClose asChild>
@@ -313,7 +417,7 @@ export default function EventsPage() {
             </DialogContent>
           </Dialog>
 
-          {/* TABLE */}
+          {/* DATA TABLE */}
           <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
@@ -325,8 +429,8 @@ export default function EventsPage() {
               onEntriesChange={setEntries}
               page={page}
               totalPages={totalPages}
-              onPrevious={handlePrev}
-              onNext={handleNext}
+              onPrevious={() => setPage(Math.max(page - 1, 1))}
+              onNext={() => setPage(Math.min(page + 1, totalPages))}
               emptyMessage="No events found"
             />
           </div>
@@ -336,19 +440,46 @@ export default function EventsPage() {
   );
 }
 
-// SAME InputBox used in TrainingsPage
 function InputBox({ label, type, name, form, setForm, min }: any) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <input
         type={type}
-        required
         min={min}
+        required
         value={form[name] ?? ""}
         onChange={(e) => setForm({ ...form, [name]: e.target.value })}
-        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-800 focus:ring-2 focus:ring-gray-400"
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
       />
+    </div>
+  );
+}
+
+function ImageUpload({ label, preview, onChange }: any) {
+
+  console.log(preview,"preview---------------->")
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="w-full text-sm border border-gray-300 rounded-md px-3 py-2"
+      />
+
+      {preview && (
+        <Image
+          src={preview}
+          alt="preview"
+          width={300}
+          height={200}
+          className="w-full h-32 object-cover rounded-md border mt-2"
+          unoptimized
+        />
+      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function Sidebar() {
 
   // ✔ Helper: check if module has READ permission
   const hasReadPermission = (moduleName: string) => {
-    const found = userPermissions.find((p) => p.module === moduleName);
+    const found = userPermissions?.find?.((p) => p.module === moduleName);
     return found?.read === true;
   };
 
@@ -134,6 +134,7 @@ export default function Sidebar() {
     },
 
     { name: "Grievance", module: "Grievance", href: "/admin/grievance" },
+    { name: "Contact Us", module: "ContactUS", href: "/admin/contactUs" },
   ];
 
   return (

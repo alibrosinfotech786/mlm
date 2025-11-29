@@ -13,6 +13,18 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BvHistoryController;
 use App\Http\Controllers\WalletTransactionController;
 use App\Http\Controllers\GrievanceController;
+use App\Http\Controllers\ContactController;
+
+// test
+Route::get('/test', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'API is working perfectly!',
+        'server_time' => now(),
+        'ip' => request()->ip(),
+        'app_url' => config('app.url')
+    ]);
+});
 
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -21,9 +33,15 @@ Route::post('/login', [AuthController::class, 'login']);
 // Public routes for testing
 Route::get('/users/show', [UserController::class, 'showByUserId']);
 Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{id}', [EventController::class, 'showById']);
 Route::get('/trainings', [TrainingController::class, 'index']);
+Route::get('/trainings/{id}', [TrainingController::class, 'showById']);
+Route::get('/trainings/show', [TrainingController::class, 'show']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/show', [ProductController::class, 'show']);
+
+// Contact routes
+Route::post('/contact', [ContactController::class, 'store']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -76,7 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Training routes
     Route::post('/trainings/store', [TrainingController::class, 'store']);
-    Route::get('/trainings/show', [TrainingController::class, 'show']);
+    
     Route::post('/trainings/update', [TrainingController::class, 'update']);
     Route::post('/trainings/delete', [TrainingController::class, 'destroy']);
     Route::post('/trainings/join', [TrainingController::class, 'joinTraining']);
@@ -118,5 +136,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/grievances/update', [GrievanceController::class, 'update']);
     Route::post('/grievances/status', [GrievanceController::class, 'updateStatus']);
     Route::post('/grievances/delete', [GrievanceController::class, 'destroy']);
+    
+    // Contact routes (admin only)
+    Route::get('/contacts', [ContactController::class, 'index']);
 });
 

@@ -76,6 +76,8 @@ export default function ProfilePage() {
     ? `${BASE}/${user.profile_picture}`.replace(/([^:]\/)\/+/g, "$1")
     : "/images/default-user.png";
 
+
+    // console.log(profilePicture,"profilePicture-------->")
   return (
     <>
       <AdminHeader />

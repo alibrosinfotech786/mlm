@@ -42,6 +42,7 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Sponser Matching Income",
     "Repurchasing Income",
     "Grievance",
+    "ContactUS",
     "BV Summary",
     "All Wallet Request",
   ];

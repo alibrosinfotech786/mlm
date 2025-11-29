@@ -43,6 +43,7 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     "Sponser Matching Income",
     "Repurchasing Income",
     "Grievance",
+    "ContactUS",
     "BV Summary",
     "All Wallet Request",
   ];

@@ -86,8 +86,11 @@ const ProjectApiList = {
     
     // My Income
     MATCHING_INCOME: `${BASE_URL}/users/daily-matching-income`,
-
-
+    
+    
+    // Contact us
+    post_contact_us: `${BASE_URL}/contact`,
+    get_contact_us: `${BASE_URL}/contacts`,
 
 
 
