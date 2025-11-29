@@ -31,35 +31,31 @@ export default function ContactPage() {
     formState: { errors },
   } = useForm<ContactFormInputs>();
 
-  // Called when clicking SUBMIT
   const handleFormSubmit = (data: ContactFormInputs) => {
     setTempData(data);
-    setIsModalOpen(true); // open confirmation modal
+    setIsModalOpen(true);
   };
 
-  // When user CONFIRMS
- const submitConfirmed = async () => {
-  if (!tempData) return;
+  const submitConfirmed = async () => {
+    if (!tempData) return;
 
-  try {
-    const res = await axiosInstance.post(ProjectApiList.post_contact_us, tempData);
+    try {
+      await axiosInstance.post(ProjectApiList.post_contact_us, tempData);
+      toast.success("Message sent successfully!");
+      reset();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to send message");
+    }
 
-    toast.success("Message sent successfully!");
-    reset();
-  } catch (err: any) {
-    console.error(err);
-    toast.error(err?.response?.data?.message || "Failed to send message");
-  }
-
-  setIsModalOpen(false);
-  setTempData(null);
-};
+    setIsModalOpen(false);
+    setTempData(null);
+  };
 
   return (
     <>
       <Header />
 
-      {/* === Confirmation Modal === */}
+      {/* CONFIRMATION MODAL */}
       <ConfirmModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -74,12 +70,50 @@ export default function ContactPage() {
         </p>
       </section>
 
-      {/* FORM SECTION */}
+      {/* CONTACT GRID */}
       <section className="py-16 px-6 md:px-12 lg:px-32">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* LEFT SIDE CONTACT INFO */}
-          {/* ... this part remains same ... */}
+          <div>
+            <h2 className="text-xl md:text-2xl font-semibold text-primary mb-4">
+              Contact Information
+            </h2>
+
+            <div className="space-y-6">
+
+              <ContactDetail
+                icon={<Phone className="w-5 h-5 text-primary" />}
+                title="Phone"
+                value="+9199977007"
+              />
+
+              <ContactDetail
+                icon={<Mail className="w-5 h-5 text-primary" />}
+                title="Email"
+                value="info@tathastuayurveda.world"
+              />
+
+              <ContactDetail
+                icon={<MapPin className="w-5 h-5 text-primary" />}
+                title="Address"
+                value="Ranchi, Jharkhand 834003, Ramgarh, Jharkhand 829106"
+              />
+
+              <ContactDetail
+                icon={<Globe className="w-5 h-5 text-primary" />}
+                title="Website"
+                value="www.athastuayurveda.world"
+              />
+
+              {/* <ContactDetail
+                icon={<Clock className="w-5 h-5 text-primary" />}
+                title="Working Hours"
+                value="Mon – Sat: 9:00 AM – 7:00 PM"
+              /> */}
+
+            </div>
+          </div>
 
           {/* RIGHT SIDE FORM */}
           <div className="bg-card border border-border shadow-md rounded-xl p-8">
@@ -87,11 +121,11 @@ export default function ContactPage() {
               Send Us a Message
             </h2>
 
-            <form onSubmit={handleSubmit(handleFormSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              {/* NAME */}
-              <div className="flex flex-col">
-                <label className="text-sm mb-1">Name</label>
+            <form
+              onSubmit={handleSubmit(handleFormSubmit)}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              <FormField label="Name" error={errors.name?.message}>
                 <Input
                   placeholder="Your Name"
                   className="bg-background"
@@ -100,12 +134,9 @@ export default function ContactPage() {
                     minLength: { value: 3, message: "Min 3 characters" },
                   })}
                 />
-                {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
-              </div>
+              </FormField>
 
-              {/* EMAIL */}
-              <div className="flex flex-col">
-                <label className="text-sm mb-1">Email</label>
+              <FormField label="Email" error={errors.email?.message}>
                 <Input
                   type="email"
                   placeholder="Your Email"
@@ -118,12 +149,9 @@ export default function ContactPage() {
                     },
                   })}
                 />
-                {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
-              </div>
+              </FormField>
 
-              {/* PHONE */}
-              <div className="flex flex-col md:col-span-2">
-                <label className="text-sm mb-1">Phone</label>
+              <FormField label="Phone" full error={errors.phone?.message}>
                 <Input
                   placeholder="Your Phone Number"
                   className="bg-background"
@@ -134,12 +162,9 @@ export default function ContactPage() {
                     maxLength: { value: 15, message: "Max 15 digits" },
                   })}
                 />
-                {errors.phone && <p className="text-red-500 text-xs">{errors.phone.message}</p>}
-              </div>
+              </FormField>
 
-              {/* SUBJECT */}
-              <div className="flex flex-col md:col-span-2">
-                <label className="text-sm mb-1">Subject</label>
+              <FormField label="Subject" full error={errors.subject?.message}>
                 <Input
                   placeholder="Subject"
                   className="bg-background"
@@ -148,12 +173,9 @@ export default function ContactPage() {
                     minLength: { value: 5, message: "Min 5 characters" },
                   })}
                 />
-                {errors.subject && <p className="text-red-500 text-xs">{errors.subject.message}</p>}
-              </div>
+              </FormField>
 
-              {/* MESSAGE */}
-              <div className="flex flex-col md:col-span-2">
-                <label className="text-sm mb-1">Message</label>
+              <FormField label="Message" full error={errors.message?.message}>
                 <textarea
                   rows={5}
                   placeholder="Your message..."
@@ -163,8 +185,7 @@ export default function ContactPage() {
                     minLength: { value: 10, message: "Min 10 characters" },
                   })}
                 ></textarea>
-                {errors.message && <p className="text-red-500 text-xs">{errors.message.message}</p>}
-              </div>
+              </FormField>
 
               <div className="md:col-span-2 mt-4">
                 <Button
@@ -174,8 +195,30 @@ export default function ContactPage() {
                   Send Message
                 </Button>
               </div>
-
             </form>
+          </div>
+
+        </div>
+      </section>
+
+      {/* MAP SECTION */}
+      <section className="px-6 md:px-12 lg:px-32 pb-16 mt-10">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-xl md:text-2xl font-semibold text-primary mb-6">
+            Find Us on Map
+          </h2>
+
+          <div className="w-full h-[350px] md:h-[450px] rounded-xl overflow-hidden border border-border shadow-md">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58482.189545792586!2d85.47223670499231!3d23.63526974291886!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f4f3f4a5cf98fd%3A0xcf187bf27b7bc4e9!2sRamgarh%20Cantonment%2C%20Jharkhand!5e0!3m2!1sen!2sin!4v1764415197169!5m2!1sen!2sin"
+              width="100%"
+              height="100%"
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
+
+            {/* <iframe  width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> */}
           </div>
         </div>
       </section>
@@ -185,15 +228,46 @@ export default function ContactPage() {
   );
 }
 
-/* ===================== */
-/* Contact Detail Component */
+/* ------------------------------ */
+/* FORM FIELD COMPONENT */
+function FormField({
+  label,
+  children,
+  error,
+  full,
+}: {
+  label: string;
+  children: any;
+  error?: string;
+  full?: boolean;
+}) {
+  return (
+    <div className={full ? "md:col-span-2 flex flex-col" : "flex flex-col"}>
+      <label className="text-sm mb-1">{label}</label>
+      {children}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
+/* ------------------------------ */
+/* CONTACT DETAIL BOX COMPONENT */
 function ContactDetail({ icon, title, value }: any) {
   return (
-    <div className="flex gap-4 items-start">
+    <div
+      className="
+      flex gap-4 items-start p-4 
+      bg-card border border-border shadow-sm rounded-xl
+      hover:shadow-md transition-all
+    "
+    >
       <div className="p-3 bg-primary/10 rounded-lg">{icon}</div>
-      <div>
+
+      <div className="flex flex-col">
         <h3 className="text-sm font-semibold text-primary">{title}</h3>
-        <p className="text-sm text-muted-foreground mt-1">{value}</p>
+        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+          {value}
+        </p>
       </div>
     </div>
   );

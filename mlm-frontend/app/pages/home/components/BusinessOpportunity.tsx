@@ -89,20 +89,20 @@ export default function BusinessOpportunity() {
             <span className="text-primary font-semibold"> Health First. Growth Always. Ethics Forever.</span>
             <br /><br />
 
-            We provide individuals across India with a low-cost, high-impact business opportunity supported by world-class training, strong mentorship, and a transparent compensation system.
-            <br /><br />
-
-            We are not just a product company.
-            <strong className="text-primary"> We are a movement — a community built on wellness, leadership, and financial empowerment.</strong>
-            <br /><br />
-
-            With a vision to create India’s most ethical and successful network marketing ecosystem, we stand as a bridge between
-            <strong className="text-primary"> ancient wellness</strong>,
-            <strong className="text-primary"> modern entrepreneurship</strong>, and
-            <strong className="text-primary"> lifelong personal transformation</strong>.
           </p>
         </div>
 
+      </div>
+      <div className="mx-30">
+        <p className="pb-2"> We provide individuals across India with a low-cost, high-impact business opportunity supported by world-class training, strong mentorship, and a transparent compensation system.</p>
+        <p className="pb-2">
+          We are not just a product company.
+          <strong className="text-primary"> We are a movement — a community built on wellness, leadership, and financial empowerment.</strong></p>
+
+        With a vision to create India’s most ethical and successful network marketing ecosystem, we stand as a bridge between
+        <strong className="text-primary"> ancient wellness</strong>,
+        <strong className="text-primary"> modern entrepreneurship</strong>, and
+        <strong className="text-primary"> lifelong personal transformation</strong>.
       </div>
     </section>
   );

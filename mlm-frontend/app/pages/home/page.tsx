@@ -20,9 +20,9 @@ export default function HomePage() {
       <ProductCategory />
       {/* <ProductCarousel /> */}
       <Banner />
-      <SuccessStories />
       <EventCardsSection />
       <TrainingCourses />
+      <SuccessStories />
       <Footer />
 
     </>
