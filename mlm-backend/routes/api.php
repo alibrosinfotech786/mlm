@@ -14,6 +14,8 @@ use App\Http\Controllers\BvHistoryController;
 use App\Http\Controllers\WalletTransactionController;
 use App\Http\Controllers\GrievanceController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\StateController;
+use App\Http\Controllers\DistrictController;
 
 // test
 Route::get('/test', function () {
@@ -42,6 +44,11 @@ Route::get('/products/show', [ProductController::class, 'show']);
 
 // Contact routes
 Route::post('/contact', [ContactController::class, 'store']);
+
+// Public location routes
+Route::get('/states', [StateController::class, 'index']);
+Route::get('/districts', [DistrictController::class, 'index']);
+Route::get('/districts/by-state', [DistrictController::class, 'getByState']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -141,5 +148,17 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Contact routes (admin only)
     Route::get('/contacts', [ContactController::class, 'index']);
+    
+    // State routes
+    Route::post('/states/store', [StateController::class, 'store']);
+    Route::get('/states/show', [StateController::class, 'show']);
+    Route::post('/states/update', [StateController::class, 'update']);
+    Route::post('/states/delete', [StateController::class, 'destroy']);
+    
+    // District routes
+    Route::post('/districts/store', [DistrictController::class, 'store']);
+    Route::get('/districts/show', [DistrictController::class, 'show']);
+    Route::post('/districts/update', [DistrictController::class, 'update']);
+    Route::post('/districts/delete', [DistrictController::class, 'destroy']);
 });
 

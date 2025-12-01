@@ -45,6 +45,8 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     "Grievance",
     "ContactUS",
     "BV Summary",
+    "Add State",
+    "Add District",
     "All Wallet Request",
   ];
 

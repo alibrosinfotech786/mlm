@@ -55,6 +55,13 @@ export default function Sidebar() {
     { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
 
     {
+      name: "Masters",
+      items: [
+        { name: "Add State", module: "Add State", href: "/admin/masters/state" },
+        { name: "Add District", module: "Add District", href: "/admin/masters/district" }
+      ]
+    },
+    {
       name: "Events",
       items: [
         { name: "Add Events", module: "Add Events", href: "/admin/events" },

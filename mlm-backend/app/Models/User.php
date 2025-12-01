@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'address',
+        'state_id',
+        'district_id',
         'sponsor_id',
         'sponsor_name',
         'root_id',
@@ -91,6 +93,16 @@ class User extends Authenticatable
         return $this->hasOne(KycDetail::class);
     }
     
+    public function state()
+    {
+        return $this->belongsTo(State::class);
+    }
+    
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
+    
 
     
     public function bvHistories()
@@ -114,27 +126,25 @@ class User extends Authenticatable
         parent::boot();
         
         static::creating(function ($user) {
-            $user->user_id = self::generateUserId();
+            // user_id will be set in the controller with state and district codes
         });
     }
 
-    private static function generateUserId()
+    public static function generateUserId($stateCode, $districtCode)
     {
-        $year = date('Y');
-        $month = date('m');
-        $prefix = "THT{$year}{$month}";
+        $prefix = strtoupper($stateCode . $districtCode);
         
         $lastUser = self::where('user_id', 'like', $prefix . '%')
             ->orderBy('user_id', 'desc')
             ->first();
         
         if ($lastUser) {
-            $lastNumber = (int) substr($lastUser->user_id, -10);
+            $lastNumber = (int) substr($lastUser->user_id, -7);
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
         }
         
-        return $prefix . str_pad($nextNumber, 10, '0', STR_PAD_LEFT);
+        return $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
     }
 }

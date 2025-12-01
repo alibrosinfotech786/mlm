@@ -44,6 +44,8 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Grievance",
     "ContactUS",
     "BV Summary",
+    "Add State",
+    "Add District",
     "All Wallet Request",
   ];
 

@@ -29,21 +29,29 @@ class AuthController extends Controller
                 'email' => 'required|string|email|max:255|unique:users',
                 'phone' => 'required|string|max:15',
                 'address' => 'required|string',
+                'state_id' => 'required|exists:states,id',
+                'district_id' => 'required|exists:districts,id',
                 'nominee' => 'nullable|string|max:255',
                 'password' => 'required|string|min:8|confirmed',
                 'sponsor_id' => 'nullable|exists:users,user_id',
                 'sponsor_name' => 'nullable|string|max:255',
                 'position' => 'nullable|in:left,right',
-
             ];
             
             $request->validate($validationRules);
 
+            // Get state and district codes for user_id generation
+            $state = \App\Models\State::find($request->state_id);
+            $district = \App\Models\District::find($request->district_id);
+            
             $userData = [
+                'user_id' => \App\Models\User::generateUserId($state->code, $district->code),
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'address' => $request->address,
+                'state_id' => $request->state_id,
+                'district_id' => $request->district_id,
                 'nominee' => $request->nominee,
                 'password' => Hash::make($request->password),
                 'role' => 'User',

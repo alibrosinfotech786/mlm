@@ -97,7 +97,7 @@ export const teamMembers = [
   {
     id: 6,
     name: "KARTIK DEBNATH",
-    image: "/teams/default-avatar.png",
+    image: "/teams/Kartik_Debnath.jpeg",
     designation: "Tathastu Ayurveda Leader",
     location: "Tripura, India",
     shortDescription:

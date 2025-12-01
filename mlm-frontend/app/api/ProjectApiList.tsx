@@ -93,10 +93,19 @@ const ProjectApiList = {
     // Contact us
     post_contact_us: `${BASE_URL}/contact`,
     get_contact_us: `${BASE_URL}/contacts`,
+    
+    
+    // Masters
+    getState: `${BASE_URL}/states`,
+    postState: `${BASE_URL}/states/store`,
+    updateState: `${BASE_URL}/states/update`,
+    deleteState: `${BASE_URL}/states/delete`,
 
-
-
-
+    getDistrict: `${BASE_URL}/districts`,
+    postDistrict: `${BASE_URL}/districts/store`,
+    updateDistrict: `${BASE_URL}/districts/update`,
+    deleteDistrict: `${BASE_URL}/districts/update`,
+    getDistrictByState: `${BASE_URL}/districts/by-state`,
 
 };
 
