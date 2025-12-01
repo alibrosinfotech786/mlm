@@ -19,37 +19,34 @@ function resolveImage(path?: string) {
 export default function EventCardsSection() {
   const [events, setEvents] = useState([]);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const [loading, setLoading] = useState(true); // ✅ Loading state
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  function slideLeft() {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -350, behavior: "smooth" });
-    }
-  }
+  const slideLeft = () => scrollRef.current?.scrollBy({ left: -350, behavior: "smooth" });
+  const slideRight = () => scrollRef.current?.scrollBy({ left: 350, behavior: "smooth" });
 
-  function slideRight() {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 350, behavior: "smooth" });
-    }
-  }
-
-  function formatDate(dateString: string) {
+  const formatDate = (dateString: string) => {
     if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
-  }
+  };
 
+  /** =======================
+   *      FETCH EVENTS
+   ======================= */
   async function fetchEvents() {
     try {
+      setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.eventsList);
       setEvents(res.data.events || []);
     } catch {
       toast.error("Unable to load events");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -97,46 +94,53 @@ export default function EventCardsSection() {
           </button>
         </div>
 
-        {/* SLIDER WRAPPER */}
-        <div className="relative w-full">
+        {/* ============================
+           LOADING UI
+        ============================ */}
+        {loading && (
+          <div className="text-center py-10 text-gray-500 text-lg">
+            Loading events...
+          </div>
+        )}
 
-          {/* LEFT BUTTON */}
-          <button
-            onClick={slideLeft}
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-primary text-white 
-            p-1 rounded-full shadow-md hover:bg-green-700 z-10"
-          >
-            <ArrowLeft />
-          </button>
+        {/* ============================
+            NO DATA UI
+        ============================ */}
+        {!loading && visibleEvents.length === 0 && (
+          <div className="text-center py-10 text-gray-500 text-lg">
+            No {activeTab === "upcoming" ? "upcoming" : "past"} events found.
+          </div>
+        )}
 
-          {/* RIGHT BUTTON */}
-          <button
-            onClick={slideRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-primary text-white 
-            p-1 rounded-full shadow-md hover:bg-green-700 z-10"
-          >
-            <ArrowRight />
-          </button>
+        {/* Show slider ONLY if events exist */}
+        {!loading && visibleEvents.length > 0 && (
+          <div className="relative w-full">
 
-          {/* SCROLL CARDS */}
-          <div
-            ref={scrollRef}
-            className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
-          >
-            <div className="flex gap-8 mx-16">
+            {/* LEFT BUTTON */}
+            <button
+              onClick={slideLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 bg-primary text-white
+              p-1 rounded-full shadow-md hover:bg-green-700 z-10"
+            >
+              <ArrowLeft />
+            </button>
 
-              {visibleEvents.length === 0 && (
-                <p className="text-muted-foreground text-center w-full">
-                  No events to show.
-                </p>
-              )}
+            {/* RIGHT BUTTON */}
+            <button
+              onClick={slideRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 bg-primary text-white
+              p-1 rounded-full shadow-md hover:bg-green-700 z-10"
+            >
+              <ArrowRight />
+            </button>
 
-              {visibleEvents.map((event: any) => {
-                /* 🔥 LOG IMAGE DETAILS */
-                console.log("RAW API IMAGE:", event.image1);
-                console.log("RESOLVED IMAGE URL:", resolveImage(event.image1));
-
-                return (
+            {/* SCROLL CARDS */}
+            <div
+              ref={scrollRef}
+              className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
+            >
+              <div className="flex gap-8 mx-16">
+                {visibleEvents.map((event: any) => (
                   <div
                     key={event.id}
                     className="
@@ -162,9 +166,7 @@ export default function EventCardsSection() {
 
                     {/* INFORMATION */}
                     <div className="mt-5">
-                      <h3 className="text-lg font-bold text-primary">
-                        {event.venue}
-                      </h3>
+                      <h3 className="text-lg font-bold text-primary">{event.venue}</h3>
 
                       <p className="text-sm text-gray-700 mt-1 flex items-center gap-1">
                         📍 {event.city}, {event.state}
@@ -182,12 +184,11 @@ export default function EventCardsSection() {
                       </Link>
                     </div>
                   </div>
-                );
-              })}
-
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

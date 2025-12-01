@@ -148,10 +148,16 @@ export default function SignInPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full  py-2 rounded-full bg-green-600 text-white font-semibold shadow hover:opacity-90 transition disabled:opacity-50"
+                  className="w-full py-2 rounded-full bg-green-600 text-white font-semibold shadow 
+             hover:opacity-90 transition flex items-center justify-center gap-2
+             disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {isSubmitting && (
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  )}
                   {isSubmitting ? "Signing In..." : "Sign In"}
                 </button>
+
               </div>
             </form>
 
