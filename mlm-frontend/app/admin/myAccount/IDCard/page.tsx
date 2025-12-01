@@ -151,7 +151,7 @@ export default function IDCard() {
           {/* Footer */}
           <div className="bg-green-700 text-center py-3">
             <p className="text-white text-xs tracking-wider">
-              www.tathastuayurveda.in
+              www.tathastuayurveda.world
             </p>
           </div>
         </div>

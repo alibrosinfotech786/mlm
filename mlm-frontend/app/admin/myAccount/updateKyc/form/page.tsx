@@ -42,10 +42,7 @@ function KycFormContent() {
   const schema = yup.object().shape({
     full_name: yup.string().required("Full name is required"),
     dob: yup.string().required("Date of birth is required"),
-    pan_number: yup
-      .string()
-      .required("PAN number is required")
-      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Invalid PAN format"),
+    pan_number: yup.string().notRequired(),
     aadhar_number: yup
       .string()
       .required("Aadhar number is required")
