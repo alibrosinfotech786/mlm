@@ -23,7 +23,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 
 function resolveImage(path?: string) {
   if (!path) return "/images/default.jpg";
-  return `${BASE}/storage/${path}`.replace(/([^:]\/)\/+/g, "$1");
+  return `${BASE}/${path}`.replace(/([^:]\/)\/+/g, "$1");
 }
 
 function EventDetailsContent() {

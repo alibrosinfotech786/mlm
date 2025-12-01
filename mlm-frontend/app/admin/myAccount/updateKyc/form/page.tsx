@@ -1,4 +1,3 @@
-// app/admin/myAccount/updateKyc/form/page.tsx
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";

@@ -50,7 +50,9 @@ class TrainingController extends Controller
             $data = $request->except(['image']);
             
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('trainings', 'public');
+                $fileName = time() . '_' . $request->file('image')->getClientOriginalName();
+                $request->file('image')->move(public_path('uploads/trainings'), $fileName);
+                $data['image'] = 'uploads/trainings/' . $fileName;
             }
 
             $training = Training::create($data);
@@ -155,7 +157,9 @@ class TrainingController extends Controller
             $data = $request->except(['id', 'image']);
             
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('trainings', 'public');
+                $fileName = time() . '_' . $request->file('image')->getClientOriginalName();
+                $request->file('image')->move(public_path('uploads/trainings'), $fileName);
+                $data['image'] = 'uploads/trainings/' . $fileName;
             }
             
             $training->update($data);

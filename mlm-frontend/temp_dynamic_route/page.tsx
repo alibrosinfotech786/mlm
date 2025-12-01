@@ -1,4 +1,4 @@
-// app/admin/orders/buyOrders/[id]/page.tsx
+"use client";
 import ViewProductClient from './ViewProductClient';
 
 export function generateStaticParams() {

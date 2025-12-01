@@ -25,7 +25,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 // resolve path
 function resolveImage(path?: string) {
   if (!path) return "/images/no-image.png";
-  return `${BASE}/storage/${path}`.replace(/([^:]\/)\/+/g, "$1");
+  return `${BASE}/${path}`.replace(/([^:]\/)\/+/g, "$1");
 }
 
 export default function TrainingsPage() {
@@ -232,16 +232,22 @@ export default function TrainingsPage() {
     {
       key: "image",
       label: "Image",
-      render: (v: any) =>
-        v ? (
+      render: (v: any) => {
+        const finalUrl = resolveImage(v);
+        console.log("TRAINING IMAGE:", v);
+        console.log("RESOLVED IMAGE URL:", finalUrl);
+
+        return v ? (
           <img
-            src={resolveImage(v)}
+            src={finalUrl}
             className="w-12 h-12 rounded object-cover"
           />
         ) : (
           "-"
-        ),
-    },
+        );
+      },
+    }
+,
     {
       key: "actions",
       label: "Actions",

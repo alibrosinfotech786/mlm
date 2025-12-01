@@ -48,11 +48,15 @@ class EventController extends Controller
             $data = $request->except(['image1', 'image2']);
             
             if ($request->hasFile('image1')) {
-                $data['image1'] = $request->file('image1')->store('events', 'public');
+                $fileName = time() . '_1_' . $request->file('image1')->getClientOriginalName();
+                $request->file('image1')->move(public_path('uploads/events'), $fileName);
+                $data['image1'] = 'uploads/events/' . $fileName;
             }
             
             if ($request->hasFile('image2')) {
-                $data['image2'] = $request->file('image2')->store('events', 'public');
+                $fileName = time() . '_2_' . $request->file('image2')->getClientOriginalName();
+                $request->file('image2')->move(public_path('uploads/events'), $fileName);
+                $data['image2'] = 'uploads/events/' . $fileName;
             }
 
             $event = Event::create($data);
@@ -231,11 +235,15 @@ class EventController extends Controller
             $data = $request->except(['id', 'image1', 'image2']);
             
             if ($request->hasFile('image1')) {
-                $data['image1'] = $request->file('image1')->store('events', 'public');
+                $fileName = time() . '_1_' . $request->file('image1')->getClientOriginalName();
+                $request->file('image1')->move(public_path('uploads/events'), $fileName);
+                $data['image1'] = 'uploads/events/' . $fileName;
             }
             
             if ($request->hasFile('image2')) {
-                $data['image2'] = $request->file('image2')->store('events', 'public');
+                $fileName = time() . '_2_' . $request->file('image2')->getClientOriginalName();
+                $request->file('image2')->move(public_path('uploads/events'), $fileName);
+                $data['image2'] = 'uploads/events/' . $fileName;
             }
             
             $event->update($data);

@@ -1,3 +1,5 @@
+"use client";
+
 import Header from "@/components/layout/Header";
 import HorizontalParallaxSlider from "./components/HorizontalParallaxSlider";
 import BusinessOpportunity from "./components/BusinessOpportunity";
