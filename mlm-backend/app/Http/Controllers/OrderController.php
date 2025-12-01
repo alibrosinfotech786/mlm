@@ -11,6 +11,8 @@ use App\Mail\OrderConfirmationEmail;
 use App\Mail\OrderStatusUpdateEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
@@ -47,7 +49,7 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $rules = [
                 'payment_mode' => 'required|in:cod,online,wallet',
                 'billing_full_name' => 'required|string|max:255',
                 'billing_email' => 'required|email',
@@ -66,7 +68,14 @@ class OrderController extends Controller
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',
-            ]);
+            ];
+
+            // When paying via wallet, transaction password is required
+            if ($request->payment_mode === 'wallet') {
+                $rules['transaction_password'] = 'required|string';
+            }
+
+            $request->validate($rules);
 
             $orderNumber = 'ORD' . time() . rand(1000, 9999);
             $totalBv = 0;
@@ -80,48 +89,75 @@ class OrderController extends Controller
                 $totalMrp += $itemTotal;
             }
 
-            $order = Order::create([
-                'user_id' => $request->user()->id,
-                'order_number' => $orderNumber,
-                'payment_mode' => $request->payment_mode,
-                'billing_full_name' => $request->billing_full_name,
-                'billing_email' => $request->billing_email,
-                'billing_contact' => $request->billing_contact,
-                'billing_country' => $request->billing_country,
-                'billing_state' => $request->billing_state,
-                'billing_city' => $request->billing_city,
-                'billing_pincode' => $request->billing_pincode,
-                'shipping_full_name' => $request->shipping_full_name,
-                'shipping_email' => $request->shipping_email,
-                'shipping_contact' => $request->shipping_contact,
-                'shipping_country' => $request->shipping_country,
-                'shipping_state' => $request->shipping_state,
-                'shipping_city' => $request->shipping_city,
-                'shipping_pincode' => $request->shipping_pincode,
-                'total_bv' => $totalBv,
-                'total_mrp' => $totalMrp,
-            ]);
+            $user = $request->user();
 
-            // Create order items
-            foreach ($request->items as $item) {
-                $product = Product::findOrFail($item['product_id']);
-                $itemTotal = $product->mrp * $item['quantity'];
+            $order = DB::transaction(function () use ($request, $user, $orderNumber, $totalBv, $totalMrp) {
+                // Wallet payment checks and deduction
+                if ($request->payment_mode === 'wallet') {
+                    // Verify transaction password
+                    if (!$user->transaction_password || !Hash::check($request->transaction_password, $user->transaction_password)) {
+                        throw ValidationException::withMessages([
+                            'transaction_password' => ['Invalid transaction password.'],
+                        ]);
+                    }
 
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'bv' => $product->bv,
-                    'mrp' => $product->mrp,
-                    'total' => $itemTotal,
+                    // Ensure sufficient wallet balance
+                    if ($user->wallet_balance < $totalMrp) {
+                        throw ValidationException::withMessages([
+                            'wallet_balance' => ['Insufficient wallet balance.'],
+                        ]);
+                    }
+
+                    // Deduct wallet balance
+                    $user->decrement('wallet_balance', $totalMrp);
+                    $user->refresh();
+                }
+
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'order_number' => $orderNumber,
+                    'payment_mode' => $request->payment_mode,
+                    'billing_full_name' => $request->billing_full_name,
+                    'billing_email' => $request->billing_email,
+                    'billing_contact' => $request->billing_contact,
+                    'billing_country' => $request->billing_country,
+                    'billing_state' => $request->billing_state,
+                    'billing_city' => $request->billing_city,
+                    'billing_pincode' => $request->billing_pincode,
+                    'shipping_full_name' => $request->shipping_full_name,
+                    'shipping_email' => $request->shipping_email,
+                    'shipping_contact' => $request->shipping_contact,
+                    'shipping_country' => $request->shipping_country,
+                    'shipping_state' => $request->shipping_state,
+                    'shipping_city' => $request->shipping_city,
+                    'shipping_pincode' => $request->shipping_pincode,
+                    'total_bv' => $totalBv,
+                    'total_mrp' => $totalMrp,
                 ]);
-            }
+
+                // Create order items
+                foreach ($request->items as $item) {
+                    $product = Product::findOrFail($item['product_id']);
+                    $itemTotal = $product->mrp * $item['quantity'];
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity' => $item['quantity'],
+                        'bv' => $product->bv,
+                        'mrp' => $product->mrp,
+                        'total' => $itemTotal,
+                    ]);
+                }
+
+                return $order;
+            });
 
             // Send order confirmation email to logged-in user's email
             try {
                 $orderWithItems = $order->load('orderItems');
-                \Mail::to($request->user()->email)->send(new OrderConfirmationEmail($orderWithItems));
+                \Mail::to($user->email)->send(new OrderConfirmationEmail($orderWithItems));
             } catch (Exception $mailException) {
                 // Log but don't fail the order if email sending fails
                 \Log::error('Failed to send order confirmation email: ' . $mailException->getMessage());

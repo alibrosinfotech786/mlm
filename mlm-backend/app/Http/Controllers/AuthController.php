@@ -350,8 +350,23 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
+            // Convert profile picture to base64 if it exists
+            $profilePictureBase64 = null;
+            if ($user->profile_picture) {
+                $profilePath = public_path($user->profile_picture);
+                if (file_exists($profilePath)) {
+                    $imageData = file_get_contents($profilePath);
+                    $imageInfo = getimagesize($profilePath);
+                    $mimeType = $imageInfo['mime'] ?? 'image/jpeg';
+                    $profilePictureBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
+            }
+
             // Render ID card view into PDF using Dompdf directly
-            $html = view('emails.id-card-attachment', ['user' => $user])->render();
+            $html = view('emails.id-card-attachment', [
+                'user' => $user,
+                'profilePictureBase64' => $profilePictureBase64
+            ])->render();
 
             $options = new Options();
             $options->set('isRemoteEnabled', true);

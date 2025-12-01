@@ -26,15 +26,9 @@
                 <!-- Profile (avatar centered under header) -->
                 <tr>
                     <td align="center" style="padding:24px 16px 10px 16px;text-align:center;">
-                        @php
-                            $photo = $user->profile_picture
-                                ? (config('app.url') . '/' . ltrim($user->profile_picture, '/'))
-                                : null;
-                        @endphp
-
                         <div style="margin:0 auto;width:112px;height:112px;border-radius:999px;border:4px solid #16a34a;overflow:hidden;background-color:#ffffff;">
-                            @if ($photo)
-                                <img src="{{ $photo }}" alt="{{ $user->name }} Profile" width="112" height="112" style="display:block;width:112px;height:112px;object-fit:cover;">
+                            @if (isset($profilePictureBase64) && $profilePictureBase64)
+                                <img src="{{ $profilePictureBase64 }}" alt="{{ $user->name }} Profile" width="112" height="112" style="display:block;width:112px;height:112px;object-fit:cover;border:0;">
                             @else
                                 <span style="display:block;width:112px;height:112px;line-height:112px;text-align:center;font-size:36px;font-weight:bold;color:#15803d;background-color:#dcfce7;">
                                     {{ strtoupper(substr($user->name ?? 'U', 0, 1)) }}
@@ -100,7 +94,7 @@
                 <tr>
                     <td align="center" style="background-color:#15803d;padding:10px 8px;">
                         <p style="margin:0;font-size:11px;color:#ffffff;letter-spacing:0.16em;text-transform:uppercase;">
-                            www.tathastuayurveda.in
+                            www.tathastuayurveda.world
                         </p>
                     </td>
                 </tr>

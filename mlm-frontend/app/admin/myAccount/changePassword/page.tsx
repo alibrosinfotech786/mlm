@@ -40,6 +40,7 @@ export default function ChangePasswordPage() {
 
         if (res?.data?.success && res.data.users?.length > 0) {
           const user = res.data.users[0];
+          // If transaction_password is null/undefined/empty string -> treat as not existing
           setTransactionExists(!!user.transaction_password);
         }
       } catch {
@@ -65,8 +66,7 @@ export default function ChangePasswordPage() {
     (type: "login" | "transaction") => async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const data =
-        type === "login" ? loginPassword : transactionPassword;
+      const data = type === "login" ? loginPassword : transactionPassword;
 
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = user?.id;
@@ -127,25 +127,38 @@ export default function ChangePasswordPage() {
         }
 
         /* ==========================
-            ALWAYS — UPDATE TRANSACTION PASSWORD
+            UPDATE TRANSACTION PASSWORD
+           (If transaction password doesn't exist — only send new password)
         ========================== */
         setTransactionLoading(true);
 
+        // Build payload depending on whether transaction exists
+        const payload: any = {
+          user_id: userId,
+          transaction_password: data.new_password,
+        };
+
+        if (transactionExists) {
+          // If transaction password exists, API might expect the current one
+          payload.current_transaction_password = data.current_password;
+        }
+
         const res = await axiosInstance.post(
           ProjectApiList.SET_TRANSACTION_PASSWORD,
-          {
-            user_id: userId,
-            current_transaction_password: data.current_password,
-            transaction_password: data.new_password,
-          },
+          payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (
           res?.data?.error ||
-          res?.data?.message?.toLowerCase().includes("incorrect")
+          (res?.data?.message && res.data.message.toLowerCase().includes("incorrect"))
         ) {
-          toast.error("Current transaction password is incorrect.");
+          // If we expected a current password but it was wrong
+          toast.error(
+            transactionExists
+              ? "Current transaction password is incorrect."
+              : "Unable to set transaction password."
+          );
           setTransactionLoading(false);
           return;
         }
@@ -230,20 +243,22 @@ export default function ChangePasswordPage() {
 
             <form onSubmit={handleSubmit("transaction")} className="space-y-5">
 
-              {/* ALWAYS SHOW CURRENT PASSWORD */}
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Current Transaction Password
-                </label>
-                <input
-                  type="password"
-                  name="current_password"
-                  value={transactionPassword.current_password}
-                  onChange={handleChange(setTransactionPassword)}
-                  required
-                  className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                />
-              </div>
+              {/* SHOW CURRENT PASSWORD ONLY IF TRANSACTION PASSWORD EXISTS */}
+              {transactionExists && (
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    Current Transaction Password
+                  </label>
+                  <input
+                    type="password"
+                    name="current_password"
+                    value={transactionPassword.current_password}
+                    onChange={handleChange(setTransactionPassword)}
+                    required={transactionExists}
+                    className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
+                  />
+                </div>
+              )}
 
               {/* NEW PASSWORD */}
               <div>

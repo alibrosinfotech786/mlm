@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -41,10 +41,7 @@ function KycFormContent() {
   const schema = yup.object().shape({
     full_name: yup.string().required("Full name is required"),
     dob: yup.string().required("Date of birth is required"),
-    pan_number: yup
-      .string()
-      .required("PAN number is required")
-      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Invalid PAN format"),
+    pan_number: yup.string().notRequired(),
     aadhar_number: yup
       .string()
       .required("Aadhar number is required")
@@ -138,18 +135,43 @@ function KycFormContent() {
     loadKyc();
   }, [mode, reset]);
 
-  const watchFiles: any = watch();
+  const aadharFront = watch("aadhar_front");
+  const aadharBack = watch("aadhar_back");
+  const panCard = watch("pan_card");
+  const cancelledCheque = watch("cancelled_cheque");
+  const blobUrlsRef = useRef<Record<string, string>>({});
+
   useEffect(() => {
-    ["aadhar_front", "aadhar_back", "pan_card", "cancelled_cheque"].forEach(
-      (key) => {
-        const file = watchFiles[key];
-        if (file && file.length) {
-          const url = URL.createObjectURL(file[0]);
-          setPreview((p) => ({ ...p, [key]: url }));
+    const fileFields = [
+      { key: "aadhar_front", file: aadharFront },
+      { key: "aadhar_back", file: aadharBack },
+      { key: "pan_card", file: panCard },
+      { key: "cancelled_cheque", file: cancelledCheque },
+    ];
+
+    fileFields.forEach(({ key, file }) => {
+      const fileList = file as FileList | null | undefined;
+      if (fileList && fileList.length > 0) {
+        // Clean up previous URL if it exists
+        if (blobUrlsRef.current[key]) {
+          URL.revokeObjectURL(blobUrlsRef.current[key]);
         }
+        const url = URL.createObjectURL(fileList[0]);
+        blobUrlsRef.current[key] = url;
+        setPreview((p) => ({ ...p, [key]: url }));
       }
-    );
-  }, [watchFiles]);
+    });
+
+    // Cleanup function to revoke object URLs on unmount
+    return () => {
+      Object.values(blobUrlsRef.current).forEach((url) => {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      });
+      blobUrlsRef.current = {};
+    };
+  }, [aadharFront, aadharBack, panCard, cancelledCheque]);
 
   const onSubmit = async (data: any) => {
     try {

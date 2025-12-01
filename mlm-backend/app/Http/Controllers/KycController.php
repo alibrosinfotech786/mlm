@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\KycDetail;
+use App\Models\User;
+use App\Mail\KycSubmissionEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
@@ -65,6 +68,19 @@ class KycController extends Controller
             }
 
             $kyc = KycDetail::create($data);
+            
+            // Get the logged-in user
+            $user = User::find($request->user_id);
+            
+            // Send email notification
+            if ($user && $user->email) {
+                try {
+                    Mail::to($user->email)->send(new KycSubmissionEmail($kyc, $user, false));
+                } catch (Exception $e) {
+                    // Log email error but don't fail the request
+                    \Log::error('KYC submission email failed to send: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -127,6 +143,21 @@ class KycController extends Controller
             }
 
             $kyc->update($data);
+            $kyc->refresh();
+            
+            // Get the user associated with this KYC
+            $user = $kyc->user;
+            
+            // Send email notification
+            if ($user && $user->email) {
+                try {
+                    Mail::to($user->email)->send(new KycSubmissionEmail($kyc, $user, true));
+                } catch (Exception $e) {
+                    // Log email error but don't fail the request
+                    \Log::error('KYC update email failed to send: ' . $e->getMessage());
+                }
+            }
+            
             return response()->json([
                 'success' => true,
                 'kyc_detail' => $kyc,
