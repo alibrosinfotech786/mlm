@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import {
@@ -79,6 +79,11 @@ export default function CartPage() {
     null
   );
   const [loading, setLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [transactionPassword, setTransactionPassword] = useState("");
+  const [transactionPasswordError, setTransactionPasswordError] =
+    useState<string | null>(null);
 
   // -------------------------
   // React Hook Form Setup
@@ -115,6 +120,8 @@ export default function CartPage() {
     },
   });
 
+  const paymentMode = watch("payment_mode");
+
   const totalAmount = items.reduce(
     (sum, item) => sum + item.mrp * item.quantity,
     0
@@ -133,12 +140,62 @@ export default function CartPage() {
   }
 
   // ======================
+  // LOAD LOGGED-IN USER (for wallet balance)
+  // ======================
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setUserLoading(false);
+          return;
+        }
+
+        const res = await axiosInstance.get(ProjectApiList.USER, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res?.data?.success && res.data.user) {
+          setWalletBalance(Number(res.data.user.wallet_balance ?? 0));
+        } else {
+          toast.error("Failed to load wallet balance");
+        }
+      } catch {
+        toast.error("Failed to load wallet balance");
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // ======================
   // ORDER FINAL SUBMIT
   // ======================
   async function placeOrderFinal(data: any) {
     if (items.length === 0) {
       toast.error("Your cart is empty");
       return;
+    }
+
+    if (data.payment_mode === "wallet") {
+      // Frontend safety check, backend also validates
+      if (walletBalance == null) {
+        toast.error("Unable to read wallet balance. Please refresh the page.");
+        return;
+      }
+
+      if (walletBalance < totalAmount) {
+        toast.error("Insufficient wallet balance for this order.");
+        return;
+      }
+
+      if (!transactionPassword.trim()) {
+        setTransactionPasswordError("Transaction password is required");
+        toast.error("Please enter your transaction password");
+        return;
+      }
     }
 
     setLoading(true);
@@ -166,16 +223,25 @@ export default function CartPage() {
         product_id: it.id,
         quantity: it.quantity,
       })),
+      ...(data.payment_mode === "wallet" && {
+        transaction_password: transactionPassword,
+      }),
     };
 
     try {
-      await axiosInstance.post(ProjectApiList.createOrder, payload);
+      const token = localStorage.getItem("token");
+
+      await axiosInstance.post(ProjectApiList.createOrder, payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
 
       toast.success("Order placed successfully!");
 
       // CLEAR CART + RESET FORM
       clearCart();
       reset();
+      setTransactionPassword("");
+      setTransactionPasswordError(null);
 
       setConfirmOrder(false);
     } catch (err) {
@@ -355,6 +421,28 @@ export default function CartPage() {
               ))}
             </div>
 
+            {/* Wallet balance info */}
+            {paymentMode === "wallet" && (
+              <div className="mt-3 text-sm">
+                <p className="text-green-800 font-medium">
+                  Wallet Balance:{" "}
+                  <span className="font-bold">
+                    ₹
+                    {userLoading
+                      ? "Loading..."
+                      : walletBalance !== null
+                      ? walletBalance.toFixed(2)
+                      : "0.00"}
+                  </span>
+                </p>
+                {walletBalance !== null && walletBalance < totalAmount && (
+                  <p className="text-red-600 mt-1">
+                    Your wallet balance is not sufficient for this order.
+                  </p>
+                )}
+              </div>
+            )}
+
             {errors.payment_mode && (
               <p className="text-red-600 text-sm mt-1">
                 {errors.payment_mode.message}
@@ -371,7 +459,25 @@ export default function CartPage() {
               <div className="flex gap-3 mt-4">
                 <Button
                   className="bg-green-700 text-white"
-                  onClick={handleSubmit(() => setConfirmOrder(true))}
+                  onClick={handleSubmit((data) => {
+                    if (data.payment_mode === "wallet") {
+                      if (walletBalance == null) {
+                        toast.error(
+                          "Unable to read wallet balance. Please refresh the page."
+                        );
+                        return;
+                      }
+
+                      if (walletBalance < totalAmount) {
+                        toast.error(
+                          "Insufficient wallet balance for this order."
+                        );
+                        return;
+                      }
+                    }
+
+                    setConfirmOrder(true);
+                  })}
                 >
                   Place Order
                 </Button>
@@ -429,6 +535,29 @@ export default function CartPage() {
             Are you sure you want to place this order of{" "}
             <strong>₹{totalAmount}</strong>?
           </p>
+
+          {paymentMode === "wallet" && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-700">
+                Please enter your transaction password to pay via wallet.
+              </p>
+              <input
+                type="password"
+                value={transactionPassword}
+                onChange={(e) => {
+                  setTransactionPassword(e.target.value);
+                  setTransactionPasswordError(null);
+                }}
+                className="w-full border border-green-300 rounded-md px-3 py-1.5 text-sm"
+                placeholder="Transaction Password"
+              />
+              {transactionPasswordError && (
+                <p className="text-red-600 text-xs">
+                  {transactionPasswordError}
+                </p>
+              )}
+            </div>
+          )}
 
           <DialogFooter>
             <Button

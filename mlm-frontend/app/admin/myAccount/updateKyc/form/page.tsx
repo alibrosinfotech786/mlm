@@ -150,12 +150,13 @@ function KycFormContent() {
     ];
 
     fileFields.forEach(({ key, file }) => {
-      if (file && file.length) {
+      const fileList = file as FileList | null | undefined;
+      if (fileList && fileList.length > 0) {
         // Clean up previous URL if it exists
         if (blobUrlsRef.current[key]) {
           URL.revokeObjectURL(blobUrlsRef.current[key]);
         }
-        const url = URL.createObjectURL(file[0]);
+        const url = URL.createObjectURL(fileList[0]);
         blobUrlsRef.current[key] = url;
         setPreview((p) => ({ ...p, [key]: url }));
       }
