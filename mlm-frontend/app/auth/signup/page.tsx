@@ -161,49 +161,49 @@ export default function SignUpPage() {
                 </div>
               ))}
 
-            {/* ================= Sponsor ID ================= */}
-<div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-  <label className="font-semibold text-green-800">Sponsor ID</label>
+              {/* ================= Sponsor ID ================= */}
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+                <label className="font-semibold text-green-800">Sponsor ID</label>
 
-  <div className="w-full">
-    <input
-      {...register("sponsor_id", {
-        // ❌ REMOVED REQUIRED VALIDATION
-        pattern: {
-          value: /^THT\d{16}$/,
-          message: "Sponsor ID must start with THT followed by 16 digits",
-        },
-        minLength: {
-          value: 19,
-          message: "Sponsor ID must be exactly 19 characters",
-        },
-      })}
-      type="text"
-      className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+                <div className="w-full">
+                  <input
+                    {...register("sponsor_id", {
+                      // ❌ REMOVED REQUIRED VALIDATION
+                      pattern: {
+                        value: /^THT\d{16}$/,
+                        message: "Sponsor ID must start with THT followed by 16 digits",
+                      },
+                      minLength: {
+                        value: 19,
+                        message: "Sponsor ID must be exactly 19 characters",
+                      },
+                    })}
+                    type="text"
+                    className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
       from-green-100 to-yellow-100 border border-green-200"
-    />
+                  />
 
-    {/* LIVE VALIDATION WHILE TYPING */}
-    {watch("sponsor_id")?.length > 0 &&
-      watch("sponsor_id")?.length !== 19 && (
-        <p className="text-red-600 text-xs mt-1">
-          Sponsor ID must be exactly 19 characters
-        </p>
-      )}
+                  {/* LIVE VALIDATION WHILE TYPING */}
+                  {watch("sponsor_id")?.length > 0 &&
+                    watch("sponsor_id")?.length !== 19 && (
+                      <p className="text-red-600 text-xs mt-1">
+                        Sponsor ID must be exactly 19 characters
+                      </p>
+                    )}
 
-    {/* FIELD ERRORS */}
-    {errors.sponsor_id && (
-      <p className="text-red-600 text-xs mt-1">
-        {errors.sponsor_id.message}
-      </p>
-    )}
+                  {/* FIELD ERRORS */}
+                  {errors.sponsor_id && (
+                    <p className="text-red-600 text-xs mt-1">
+                      {errors.sponsor_id.message}
+                    </p>
+                  )}
 
-    {/* API BASED ERROR */}
-    {sponsorError && (
-      <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
-    )}
-  </div>
-</div>
+                  {/* API BASED ERROR */}
+                  {sponsorError && (
+                    <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
+                  )}
+                </div>
+              </div>
 
 
               {/* ================= Sponsor Name ================= */}
@@ -273,10 +273,16 @@ export default function SignUpPage() {
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-3 rounded-full bg-green-600 text-white 
-                font-semibold shadow mt-8"
+  font-semibold shadow mt-8 flex items-center justify-center gap-2
+  disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                {isSubmitting && (
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
+
                 {isSubmitting ? "Registering..." : "Submit"}
               </button>
+
 
               <p className="text-center text-green-700 text-sm mt-4">
                 Already have an account?{" "}
@@ -307,11 +313,17 @@ export default function SignUpPage() {
               </button>
 
               <button
-                className="px-5 py-2 bg-green-600 text-white rounded-full text-sm"
+                disabled={isSubmitting}
                 onClick={confirmSubmit}
+                className="px-5 py-2 bg-green-600 text-white rounded-full text-sm
+  flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Yes, Register
+                {isSubmitting && (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
+                {isSubmitting ? "Processing..." : "Yes, Register"}
               </button>
+
             </div>
           </div>
         </div>

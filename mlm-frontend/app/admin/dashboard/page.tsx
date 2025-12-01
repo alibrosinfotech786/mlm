@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Activity,
   ArrowRight,
+  IndianRupee,
 } from "lucide-react";
 import AdminHeader from "@/components/admin/AdminHeader";
 
@@ -32,7 +33,7 @@ export default function DashboardPage() {
       id: 3,
       title: "Total Earnings",
       value: "₹4,56,920",
-      icon: <DollarSign className="w-6 h-6 text-green-600" />,
+      icon: <IndianRupee className="w-6 h-6 text-green-600" />,
       change: "↑ 15% from last month",
     },
     {
