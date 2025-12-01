@@ -3,7 +3,7 @@
  * Handles all API calls to the backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost/mlm/index.php/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ;
 
 export interface ApiResponse<T = any> {
   success: boolean;

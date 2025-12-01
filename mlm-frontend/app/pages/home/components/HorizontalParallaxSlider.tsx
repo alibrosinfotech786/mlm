@@ -59,7 +59,7 @@ export default function HorizontalParallaxSlider() {
     if (el && !textRefs.current.includes(el)) textRefs.current.push(el);
   };
 
-  // 🔥 GSAP Animation
+  // GSAP Slide Animation
   useEffect(() => {
     const tl = gsap.timeline({
       defaults: { duration: 1.2, ease: "power3.inOut" },
@@ -72,7 +72,7 @@ export default function HorizontalParallaxSlider() {
     oldIndexRef.current = index;
   }, [index]);
 
-  // AUTO PLAY
+  // Auto Play Logic
   useEffect(() => {
     if (!isClient) return;
     startAutoPlay();
@@ -94,7 +94,7 @@ export default function HorizontalParallaxSlider() {
 
   if (!isClient) {
     return (
-      <div className="w-full h-[40vh] md:h-[50vh] bg-black flex items-center justify-center text-white">
+      <div className="w-full h-[40vh] bg-black flex items-center justify-center text-white">
         Loading...
       </div>
     );
@@ -102,13 +102,13 @@ export default function HorizontalParallaxSlider() {
 
   return (
     <div
-      className="relative w-full h-[45vh] sm:h-[55vh] md:h-[65vh] lg:h-[70vh] overflow-hidden bg-black"
+      className="relative w-full h-[40vh] md:h-[85vh] overflow-hidden bg-black"
       onMouseEnter={stopAutoPlay}
       onMouseLeave={startAutoPlay}
     >
-      {/* SLIDES CONTAINER */}
+      {/* Slides Wrapper */}
       <div ref={containerRef} className="flex h-full w-full">
-        {slides.map((s, i) => (
+        {slides.map((s) => (
           <div key={s.id} className="w-full h-full shrink-0 relative">
             <img
               ref={addToImageRefs}
@@ -121,7 +121,7 @@ export default function HorizontalParallaxSlider() {
         ))}
       </div>
 
-      {/* LEFT ARROW */}
+      {/* Left Arrow */}
       <button
         aria-label="Previous slide"
         onClick={() => {
@@ -133,7 +133,7 @@ export default function HorizontalParallaxSlider() {
         <RiArrowLeftSLine className="w-6 h-6" />
       </button>
 
-      {/* RIGHT ARROW */}
+      {/* Right Arrow */}
       <button
         aria-label="Next slide"
         onClick={() => {

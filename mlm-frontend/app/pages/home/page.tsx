@@ -1,3 +1,5 @@
+"use client";
+
 import Header from "@/components/layout/Header";
 import HorizontalParallaxSlider from "./components/HorizontalParallaxSlider";
 import BusinessOpportunity from "./components/BusinessOpportunity";
@@ -14,17 +16,28 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      <HorizontalParallaxSlider />
-      <Slider />
+
+      {/* WRAPPER TO OVERLAY SLIDER */}
+      <div className="relative w-full">
+        <HorizontalParallaxSlider />
+
+        {/* OVERFLOWING SLIDER */}
+        <div className="absolute left-1/2 -translate-x-1/2 -bottom-25 w-full max-w-7xl z-30">
+          <Slider />
+        </div>
+      </div>
+
+      {/* SPACING BELOW AFTER OVERLAP */}
+      <div className="mt-20" />
+
       <BusinessOpportunity />
       <ProductCategory />
       {/* <ProductCarousel /> */}
       <Banner />
-      <SuccessStories />
       <EventCardsSection />
       <TrainingCourses />
+      <SuccessStories />
       <Footer />
-
     </>
   );
 }

@@ -29,8 +29,9 @@ export default function SignUpPage() {
     setValue,
     formState: { errors, isSubmitting },
     watch,
-  } = useForm<RegisterForm>();
-
+  } = useForm<RegisterForm>({
+    mode: "onChange",   // 🚀 LIVE VALIDATION WHILE TYPING
+  });
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
@@ -43,7 +44,7 @@ export default function SignUpPage() {
      AUTO-FETCH SPONSOR NAME
   ========================================================== */
   useEffect(() => {
-    if (!sponsorId) {
+    if (!sponsorId || sponsorId.length !== 19) {
       setSponsorError("");
       setValue("sponsor_name", "");
       return;
@@ -66,35 +67,18 @@ export default function SignUpPage() {
         setSponsorError("Invalid Sponsor ID");
         setValue("sponsor_name", "");
       }
-    }, 500); // debounce 500ms
+    }, 500);
 
     return () => clearTimeout(delay);
   }, [sponsorId, setValue]);
 
   /* ==========================================================
-     ON SUBMIT
+     FORM SUBMIT
   ========================================================== */
-  // const onSubmit: SubmitHandler<RegisterForm> = async (data) => {
-  //   setServerError("");
-
-  //   try {
-  //     const response = await axiosInstance.post(ProjectApiList.REGISTER, data);
-
-  //     if (response.data?.success) {
-  //       window.location.href = "/auth/signin";
-  //     }
-  //   } catch (error: any) {
-  //     setServerError(
-  //       error?.response?.data?.message || "Registration failed! Try again."
-  //     );
-  //   }
-  // };
-
-  const onSubmit: SubmitHandler<RegisterForm> = async (data) => {
-    setFormData(data);      // save form data temporarily
-    setConfirmOpen(true);   // open confirm modal
+  const onSubmit: SubmitHandler<RegisterForm> = (data) => {
+    setFormData(data);
+    setConfirmOpen(true);
   };
-
 
   async function confirmSubmit() {
     if (!formData) return;
@@ -116,13 +100,13 @@ export default function SignUpPage() {
     setConfirmOpen(false);
   }
 
-
   return (
     <>
       <Header />
 
       <section className="min-h-screen flex flex-col md:flex-row items-center justify-center px-6 lg:px-20">
-        {/* ===== Left Section ===== */}
+
+        {/* ================= Left Section ================= */}
         <div className="w-full md:w-1/2 flex flex-col items-center text-center mb-10">
           <Image
             src="/images/logo.png"
@@ -131,18 +115,16 @@ export default function SignUpPage() {
             height={420}
             className="object-contain drop-shadow-md"
           />
-          <h2 className="text-3xl font-bold text-green-800 mt-2">
-            TATHASTU AYURVEDA
-          </h2>
-          <p className="text-green-700 text-sm mt-1">
-            Healing Roots, Cultivating Prosperity 🌿
-          </p>
+          <h2 className="text-3xl font-bold text-green-800 mt-2">TATHASTU AYURVEDA</h2>
+          <p className="text-green-700 text-sm mt-1">Healing Roots, Cultivating Prosperity 🌿</p>
         </div>
 
-        {/* ===== Right Section ===== */}
+        {/* ================= Right Section ================= */}
         <div className="w-full md:w-1/2 flex justify-center my-10">
           <div className="relative w-full max-w-2xl rounded-2xl shadow-xl p-10 bg-white">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-green-700 font-semibold text-lg px-6 py-2 rounded-full shadow-md border border-green-200">
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white 
+            text-green-700 font-semibold text-lg px-6 py-2 rounded-full shadow-md 
+            border border-green-200">
               User Registration
             </div>
 
@@ -153,7 +135,8 @@ export default function SignUpPage() {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-10 space-y-5">
-              {/* Normal Inputs */}
+
+              {/* ------- Simple Fields ------- */}
               {[
                 { id: "name", label: "Name", type: "text" },
                 { id: "email", label: "Email", type: "email" },
@@ -165,107 +148,132 @@ export default function SignUpPage() {
                   key={field.id}
                   className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4"
                 >
-                  <label className="font-semibold text-green-800">
-                    {field.label}
-                  </label>
+                  <label className="font-semibold text-green-800">{field.label}</label>
                   <input
-                    {...register(field.id as keyof RegisterForm, {
-                      required: true,
-                    })}
+                    {...register(field.id as keyof RegisterForm, { required: true })}
                     type={field.type}
-                    className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
+                    className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+                    from-green-100 to-yellow-100 border border-green-200"
                   />
+                  {errors[field.id as keyof RegisterForm] && (
+                    <p className="text-red-600 text-xs">This field is required</p>
+                  )}
                 </div>
               ))}
 
-              {/* Sponsor ID */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor ID</label>
-                <input
-                  {...register("sponsor_id", { required: true })}
-                  type="text"
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
-                />
-              </div>
+            {/* ================= Sponsor ID ================= */}
+<div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+  <label className="font-semibold text-green-800">Sponsor ID</label>
 
-              {/* Sponsor Name AUTO FILLED */}
+  <div className="w-full">
+    <input
+      {...register("sponsor_id", {
+        // ❌ REMOVED REQUIRED VALIDATION
+        pattern: {
+          value: /^THT\d{16}$/,
+          message: "Sponsor ID must start with THT followed by 16 digits",
+        },
+        minLength: {
+          value: 19,
+          message: "Sponsor ID must be exactly 19 characters",
+        },
+      })}
+      type="text"
+      className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+      from-green-100 to-yellow-100 border border-green-200"
+    />
+
+    {/* LIVE VALIDATION WHILE TYPING */}
+    {watch("sponsor_id")?.length > 0 &&
+      watch("sponsor_id")?.length !== 19 && (
+        <p className="text-red-600 text-xs mt-1">
+          Sponsor ID must be exactly 19 characters
+        </p>
+      )}
+
+    {/* FIELD ERRORS */}
+    {errors.sponsor_id && (
+      <p className="text-red-600 text-xs mt-1">
+        {errors.sponsor_id.message}
+      </p>
+    )}
+
+    {/* API BASED ERROR */}
+    {sponsorError && (
+      <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
+    )}
+  </div>
+</div>
+
+
+              {/* ================= Sponsor Name ================= */}
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                 <label className="font-semibold text-green-800">Sponsor Name</label>
                 <input
                   {...register("sponsor_name")}
                   type="text"
                   disabled
-                  className="w-full px-5 py-2.5 rounded-full bg-gray-100 border border-green-200 text-gray-600"
+                  className="w-full px-5 py-2.5 rounded-full bg-gray-100 border 
+                  border-green-200 text-gray-600"
                 />
-                {sponsorError && (
-                  <p className="text-red-600 text-xs col-span-2 text-right">
-                    {sponsorError}
-                  </p>
-                )}
               </div>
 
-              {/* position */}
+              {/* ================= Position ================= */}
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                 <label className="font-semibold text-green-800">Position</label>
                 <select
                   {...register("position", { required: true })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
+                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+                  from-green-100 to-yellow-100 border border-green-200"
                 >
                   <option value="left">Left</option>
                   <option value="right">Right</option>
                 </select>
               </div>
 
-              {/* Password */}
+              {/* ================= Password ================= */}
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                 <label className="font-semibold text-green-800">Password</label>
                 <input
                   type="password"
                   {...register("password", {
                     required: "Password is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
+                    minLength: { value: 8, message: "Password must be at least 8 characters" },
                   })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
+                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+                  from-green-100 to-yellow-100 border border-green-200"
                 />
                 {errors.password && (
-                  <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>
+                  <p className="text-red-600 text-xs">{errors.password.message}</p>
                 )}
-
               </div>
 
-              {/* Confirm Password */}
+              {/* ================= Confirm Password ================= */}
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">
-                  Confirm Password
-                </label>
+                <label className="font-semibold text-green-800">Confirm Password</label>
                 <input
                   type="password"
                   {...register("password_confirmation", {
                     required: "Confirmation is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
                     validate: (value) =>
                       value === watch("password") || "Passwords do not match",
                   })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
+                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r 
+                  from-green-100 to-yellow-100 border border-green-200"
                 />
                 {errors.password_confirmation && (
-                  <p className="text-red-600 text-xs mt-1">
+                  <p className="text-red-600 text-xs">
                     {errors.password_confirmation.message}
                   </p>
                 )}
-
               </div>
 
+              {/* SUBMIT BUTTON */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-full bg-green-600 text-white font-semibold shadow mt-8"
+                className="w-full py-3 rounded-full bg-green-600 text-white 
+                font-semibold shadow mt-8"
               >
                 {isSubmitting ? "Registering..." : "Submit"}
               </button>
@@ -281,14 +289,11 @@ export default function SignUpPage() {
         </div>
       </section>
 
+      {/* CONFIRMATION MODAL */}
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md">
-
-            <h3 className="text-lg font-semibold text-green-800 mb-3">
-              Confirm Registration
-            </h3>
-
+            <h3 className="text-lg font-semibold text-green-800 mb-3">Confirm Registration</h3>
             <p className="text-sm text-gray-700 mb-6">
               Are you sure you want to register with these details?
             </p>
@@ -308,11 +313,9 @@ export default function SignUpPage() {
                 Yes, Register
               </button>
             </div>
-
           </div>
         </div>
       )}
-
 
       <Footer />
     </>

@@ -1,111 +1,121 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import axiosInstance from "@/app/api/axiosInstance";
+import ProjectApiList from "@/app/api/ProjectApiList";
+
 import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from "@/components/ui/carousel";
 
+const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
+
+// Resolve full image URL
+function resolveImage(path?: string) {
+  if (!path) return "/images/no-image.png";
+  return `${BASE}/${path}`.replace(/([^:]\/)\/+/g, "$1");
+}
+
 const TrainingCourses = () => {
-    const courses = [
-        {
-            id: 1,
-            title: "Leadership Development Program",
-            image: "/slider/slider3.jpeg",
-            description:
-                "A complete course designed to build leadership qualities, communication skills, business understanding, and strong team management.",
-        },
-        {
-            id: 2,
-            title: "Financial Education & Wealth Building",
-            image: "/slider/slider2.jpg",
-            description:
-                "Learn money management, financial planning, passive income building, and long-term wealth creation strategies.",
-        },
-        {
-            id: 3,
-            title: "Personality Development Training",
-            image: "/slider/slider1.jpg",
-            description:
-                "Boost your confidence, public speaking skills, mindset, and professional behaviour through guided training.",
-        },
-        {
-            id: 4,
-            title: "Business Growth & Mentorship Sessions",
-            image: "/slider/slider3.jpeg",
-            description:
-                "Learn business strategies, team building, prospecting, and duplication to grow a strong organization.",
-        },
-        {
-            id: 5,
-            title: "Wellness & Ayurveda Knowledge Sessions",
-            image: "/slider/slider2.jpg",
-            description:
-                "Deep dive into Ayurveda-based wellness, product knowledge, health management, and lifestyle improvement.",
-        },
-        {
-            id: 6,
-            title: "Communication & Soft Skills Training",
-            image: "/slider/slider3.jpeg",
-            description:
-                "Improve your communication, body language, presentation skills, and professional etiquette.",
-        },
-    ];
+  const [trainings, setTrainings] = useState<any[]>([]);
 
-    return (
-        <section className="py-16 bg-background font-sans">
-            <div className="container mx-auto px-6 md:px-12 lg:px-24">
-                <h2 className="text-2xl md:text-3xl font-semibold text-primary mb-10 text-center tracking-wide">
-                    Training & Certification
-                </h2>
+  async function fetchTrainings() {
+    try {
+      const res = await axiosInstance.get(ProjectApiList.training);
+      const list = res.data.trainings || [];
 
-                <Carousel className="w-full max-w-7xl mx-auto">
-                    <CarouselContent>
-                        {courses.map((course) => (
-                            <CarouselItem
-                                key={course.id}
-                                className="md:basis-1/2 lg:basis-1/4 p-3"
-                            >
-                                <div className="bg-card border border-border rounded-md shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
-                                    <div className="relative w-full h-72">
-                                        <Image
-                                            src={course.image}
-                                            alt={course.title}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                    <div className="bg-primary text-primary-foreground py-3 text-center text-sm font-semibold uppercase tracking-wider">
-                                        {course.title}
-                                    </div>
-                                    <div className="flex flex-col grow p-4 text-left">
-                                        <p className="text-sm text-muted-foreground grow">
-                                            {course.description.slice(0, 80)}...
-                                        </p>
-                                        <a
-                                            href={`/pages/training/courseDetails?course_id=${course.id}`}
-                                            className="text-sm text-primary hover:text-primary/80 font-medium mt-2 transition"
-                                            target=""
-                                        >
-                                            Read More →
-                                        </a>
+      setTrainings(
+        list.map((t: any) => ({
+          id: t.id,
+          title: t.topic,
+          description: t.description,
+          image: resolveImage(t.image),
+        }))
+      );
+    } catch {
+      console.log("Failed to load trainings");
+    }
+  }
 
-                                    </div>
-                                </div>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
+  useEffect(() => {
+    fetchTrainings();
+  }, []);
 
-                    <CarouselPrevious className=" max-sm:ml-7 md:flex bg-primary text-primary-foreground hover:bg-primary/90" />
-                    <CarouselNext className="max-sm:mr-7 md:flex bg-primary text-primary-foreground hover:bg-primary/90" />
-                </Carousel>
-            </div>
-        </section>
-    );
+  return (
+    <section className="py-16 bg-background font-sans">
+      <div className="container mx-auto px-6 md:px-12 lg:px-24">
+        <h2 className="text-2xl md:text-3xl font-semibold text-primary mb-10 text-center tracking-wide">
+          Training & Certification
+        </h2>
+
+        <Carousel className="w-full max-w-7xl mx-auto">
+          <CarouselContent>
+            {trainings.map((course) => (
+              <CarouselItem
+                key={course.id}
+                className="md:basis-1/2 lg:basis-1/4 p-4"
+              >
+                {/* CARD */}
+                <div
+                  className="
+                    rounded-2xl overflow-hidden shadow-sm border border-border 
+                    bg-gradient-to-br from-white/90 to-green-50/40 
+                    hover:shadow-lg hover:-translate-y-1 transition-all duration-300 
+                    flex flex-col h-full
+                  "
+                >
+                  {/* IMAGE */}
+                  <div className="relative w-full h-44 bg-gray-100">
+                    <Image
+                      src={course.image}
+                      alt={course.title}
+                      fill
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+
+                  {/* TITLE BAR */}
+                  <div className="
+                    bg-primary text-primary-foreground 
+                    py-2.5 text-center text-sm font-semibold uppercase tracking-wider
+                    shadow-sm
+                  ">
+                    {course.title}
+                  </div>
+
+                  {/* DESCRIPTION AREA */}
+                  <div className="flex flex-col grow p-5 text-left">
+                    <p className="text-sm text-muted-foreground leading-relaxed grow">
+                      {course.description?.slice(0, 100)}...
+                    </p>
+
+                    {/* READ MORE LINK */}
+                    <a
+                      href={`/pages/training/courseDetails?course_id=${course.id}`}
+                      className="
+                        text-sm font-semibold text-primary hover:text-primary/80 
+                        flex items-center gap-1 transition
+                      "
+                    >
+                      Read More →
+                    </a>
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+
+          <CarouselPrevious className="max-sm:ml-7 md:flex bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" />
+          <CarouselNext className="max-sm:mr-7 md:flex bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" />
+        </Carousel>
+      </div>
+    </section>
+  );
 };
 
 export default TrainingCourses;
