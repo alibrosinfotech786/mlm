@@ -1,18 +1,19 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  
-  # Don't rewrite files or directories that exist
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  
-  # Rewrite everything else to index.html
-  RewriteRule . /index.html [L]
+
+  # 1. Do NOT force trailing slash
+  RewriteCond %{REQUEST_URI} !(\.[a-zA-Z0-9]{1,5}|/)$
+  RewriteRule ^ %{REQUEST_URI}/ [R=302,L]
+
+  # 2. If the file or directory exists, serve it
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Otherwise route everything to Next.js server handler
+  RewriteRule ^(.*)$ /index.php [L]
 </IfModule>
 
-# Enable directory indexes (serve index.html for directories)
-DirectoryIndex index.html
-
-# Prevent directory listing
+# Do NOT use DirectoryIndex for Next.js
 Options -Indexes
-

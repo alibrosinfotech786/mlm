@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import AdminHeader from "@/components/admin/AdminHeader";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 import SectionTitle from "@/components/forms/SectionTitle";
-import toast from "react-hot-toast";
 
 const fileUrl = (path?: string | null): string | null => {
   if (!path) return null;
@@ -18,7 +18,6 @@ export default function KycViewPage() {
   const [loading, setLoading] = useState(true);
   const [kyc, setKyc] = useState<any | null>(null);
 
-  // For popup image viewer
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +31,6 @@ export default function KycViewPage() {
 
         setKyc(res?.data?.success ? res.data.kyc_detail : null);
       } catch {
-        // toast.error("Failed to load KYC");
         setKyc(null);
       } finally {
         setLoading(false);
@@ -45,7 +43,6 @@ export default function KycViewPage() {
     <>
       <AdminHeader />
 
-      {/* IMAGE POPUP MODAL */}
       {previewImage && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
@@ -73,8 +70,6 @@ export default function KycViewPage() {
 
       <section className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-5xl mx-auto bg-white border rounded-lg shadow p-6 text-sm">
-
-          {/* HEADER */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-bold">KYC Overview</h2>
@@ -102,10 +97,8 @@ export default function KycViewPage() {
               ))}
           </div>
 
-          {/* LOADING */}
           {loading && <div className="text-center py-4 text-xs">Loading...</div>}
 
-          {/* NO DATA */}
           {!loading && !kyc && (
             <div className="text-center py-4 text-xs">
               No KYC found.{" "}
@@ -115,7 +108,6 @@ export default function KycViewPage() {
             </div>
           )}
 
-          {/* KYC DATA */}
           {!loading && kyc && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -137,6 +129,14 @@ export default function KycViewPage() {
                   <Field label="IFSC Code" value={kyc.ifsc_code} />
 
                   <Field label="Branch Name" value={kyc.branch_name} />
+
+                  {/* NEW FIELDS */}
+                  <Field label="Nominee Name" value={kyc.nominee_name} />
+                  <Field label="Relation" value={kyc.relation} />
+                  <Field
+                    label="Disclaimer Accepted"
+                    value={kyc.confirm_disclaimer ? "Yes" : "No"}
+                  />
 
                   <div>
                     <p className="text-gray-500">Status</p>
@@ -193,7 +193,6 @@ export default function KycViewPage() {
   );
 }
 
-/* ------------------ FIELD ------------------- */
 const Field = ({ label, value }: { label: string; value?: string }) => (
   <div>
     <p className="text-gray-500">{label}</p>
@@ -201,7 +200,6 @@ const Field = ({ label, value }: { label: string; value?: string }) => (
   </div>
 );
 
-/* ------------------ DOCUMENT PREVIEW ------------------- */
 const DocPreview = ({
   title,
   url,

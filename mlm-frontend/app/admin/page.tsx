@@ -1,6 +1,6 @@
 "use client";
 
-export default function AdminDashboard() {
+export default function Dash() {
   return (
     <div>
       <h1 className="text-3xl font-bold text-primary mb-4">Dashboard</h1>

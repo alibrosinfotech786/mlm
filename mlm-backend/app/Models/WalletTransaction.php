@@ -26,6 +26,35 @@ class WalletTransaction extends Model
     protected $casts = [
         'status_updated_at' => 'datetime',
     ];
+    
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($transaction) {
+            if (!$transaction->auto_transaction_id) {
+                $transaction->auto_transaction_id = self::generateTransactionId();
+            }
+        });
+    }
+    
+    private static function generateTransactionId()
+    {
+        $prefix = 'TXN' . date('Ymd');
+        
+        $lastTransaction = self::where('auto_transaction_id', 'like', $prefix . '%')
+            ->orderBy('auto_transaction_id', 'desc')
+            ->first();
+        
+        if ($lastTransaction) {
+            $lastNumber = (int) substr($lastTransaction->auto_transaction_id, -6);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        return $prefix . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+    }
 
     public function user()
     {

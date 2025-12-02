@@ -44,6 +44,7 @@ const ProjectApiList = {
   createOrder: `${BASE_URL}/orders/store`,
   getAllOrder: `${BASE_URL}/orders`,
   orderStatusUpdated: `${BASE_URL}/orders/status`,
+  orderRefund: `${BASE_URL}/orders/refund`,
 
 
   // Roles
@@ -106,6 +107,10 @@ const ProjectApiList = {
     updateDistrict: `${BASE_URL}/districts/update`,
     deleteDistrict: `${BASE_URL}/districts/update`,
     getDistrictByState: `${BASE_URL}/districts/by-state`,
+
+
+    // Dashboard
+    adminDashboard: `${BASE_URL}/admin/dashboard`,
 
 };
 

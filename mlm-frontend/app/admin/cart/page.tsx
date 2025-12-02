@@ -173,83 +173,92 @@ export default function CartPage() {
   // ======================
   // ORDER FINAL SUBMIT
   // ======================
-  async function placeOrderFinal(data: any) {
-    if (items.length === 0) {
-      toast.error("Your cart is empty");
+ async function placeOrderFinal(data: any) {
+  if (items.length === 0) {
+    toast.error("Your cart is empty");
+    return;
+  }
+
+  if (data.payment_mode === "wallet") {
+    if (walletBalance == null) {
+      toast.error("Unable to read wallet balance. Please refresh the page.");
       return;
     }
 
-    if (data.payment_mode === "wallet") {
-      // Frontend safety check, backend also validates
-      if (walletBalance == null) {
-        toast.error("Unable to read wallet balance. Please refresh the page.");
-        return;
-      }
-
-      if (walletBalance < totalAmount) {
-        toast.error("Insufficient wallet balance for this order.");
-        return;
-      }
-
-      if (!transactionPassword.trim()) {
-        setTransactionPasswordError("Transaction password is required");
-        toast.error("Please enter your transaction password");
-        return;
-      }
+    if (walletBalance < totalAmount) {
+      toast.error("Insufficient wallet balance for this order.");
+      return;
     }
 
-    setLoading(true);
-
-    const payload = {
-      payment_mode: data.payment_mode,
-
-      billing_full_name: data.billing.full_name,
-      billing_email: data.billing.email,
-      billing_contact: data.billing.contact,
-      billing_country: data.billing.country,
-      billing_state: data.billing.state,
-      billing_city: data.billing.city,
-      billing_pincode: data.billing.pincode,
-
-      shipping_full_name: data.shipping.full_name,
-      shipping_email: data.shipping.email,
-      shipping_contact: data.shipping.contact,
-      shipping_country: data.shipping.country,
-      shipping_state: data.shipping.state,
-      shipping_city: data.shipping.city,
-      shipping_pincode: data.shipping.pincode,
-
-      items: items.map((it) => ({
-        product_id: it.id,
-        quantity: it.quantity,
-      })),
-      ...(data.payment_mode === "wallet" && {
-        transaction_password: transactionPassword,
-      }),
-    };
-
-    try {
-      const token = localStorage.getItem("token");
-
-      await axiosInstance.post(ProjectApiList.createOrder, payload, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-
-      toast.success("Order placed successfully!");
-
-      // CLEAR CART + RESET FORM
-      clearCart();
-      reset();
-      setTransactionPassword("");
-      setTransactionPasswordError(null);
-
-      setConfirmOrder(false);
-    } catch (err) {
-      toast.error("Failed to place order");
-    } finally {
-      setLoading(false);
+    if (!transactionPassword.trim()) {
+      setTransactionPasswordError("Transaction password is required");
+      toast.error("Please enter your transaction password");
+      return;
     }
   }
+
+  setLoading(true);
+
+  const payload = {
+    payment_mode: data.payment_mode,
+
+    billing_full_name: data.billing.full_name,
+    billing_email: data.billing.email,
+    billing_contact: data.billing.contact,
+    billing_country: data.billing.country,
+    billing_state: data.billing.state,
+    billing_city: data.billing.city,
+    billing_pincode: data.billing.pincode,
+
+    shipping_full_name: data.shipping.full_name,
+    shipping_email: data.shipping.email,
+    shipping_contact: data.shipping.contact,
+    shipping_country: data.shipping.country,
+    shipping_state: data.shipping.state,
+    shipping_city: data.shipping.city,
+    shipping_pincode: data.shipping.pincode,
+
+    items: items.map((it) => ({
+      product_id: it.id,
+      quantity: it.quantity,
+    })),
+
+    ...(data.payment_mode === "wallet" && {
+      transaction_password: transactionPassword,
+    }),
+  };
+
+  try {
+    const token = localStorage.getItem("token");
+
+    await axiosInstance.post(ProjectApiList.createOrder, payload, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+
+    toast.success("Order placed successfully!");
+
+    clearCart();
+    reset();
+    setTransactionPassword("");
+    setTransactionPasswordError(null);
+
+    setConfirmOrder(false);
+  } catch (err: any) {
+    const apiError = err?.response?.data;
+
+    // 🔥 SHOW EXACT BACKEND VALIDATION MESSAGE
+    if (apiError?.errors?.transaction_password) {
+      toast.error(apiError.errors.transaction_password[0]);
+    } else if (apiError?.message) {
+      toast.error(apiError.message);
+    } else {
+      toast.error("Failed to place order");
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
 
   return (
     <>

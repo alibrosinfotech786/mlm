@@ -155,6 +155,7 @@ export default function ProfilePage() {
                 <InfoRow label="Address" value={user.address || "N/A"} />
                 <InfoRow label="Nominee" value={user.nominee || "N/A"} />
                 <InfoRow label="Rank" value={user.rank || "N/A"} />
+                <InfoRow label="Package" value={user.package || "N/A"} />
                 <InfoRow label="BV" value={user.bv || "0"} />
               </InfoCard>
 

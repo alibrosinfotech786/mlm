@@ -24,8 +24,6 @@ interface RegisterForm {
   name: string;
   email: string;
   phone: string;
-  address: string;
-  nominee: string;
   sponsor_id: string;
   sponsor_name: string;
   position: string;
@@ -35,6 +33,7 @@ interface RegisterForm {
   password_confirmation: string;
 }
 
+
 export default function SignUpPage() {
   const {
     register,
@@ -43,6 +42,9 @@ export default function SignUpPage() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({ mode: "onChange" });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
@@ -94,7 +96,7 @@ export default function SignUpPage() {
 
   /* ---------------------- SPONSOR AUTO-FETCH ---------------------- */
   useEffect(() => {
-    if (!sponsorId || sponsorId.length !== 19) {
+    if (!sponsorId || sponsorId.length !== 12) {
       setSponsorError("");
       setValue("sponsor_name", "");
       return;
@@ -196,8 +198,6 @@ export default function SignUpPage() {
                 { id: "name", label: "Name", type: "text" },
                 { id: "email", label: "Email", type: "email" },
                 { id: "phone", label: "Phone Number", type: "text" },
-                { id: "address", label: "Address", type: "text" },
-                { id: "nominee", label: "Nominee", type: "text" },
               ].map((field) => (
                 <div key={field.id} className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                   <label className="font-semibold text-green-800">{field.label}</label>
@@ -245,40 +245,40 @@ export default function SignUpPage() {
               </div>
 
               {/* Sponsor ID */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor ID</label>
+              {/* Sponsor ID */}
+<div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+  <label className="font-semibold text-green-800">Sponsor ID</label>
 
-                <div className="w-full">
-                  <input
-                    type="text"
-                    {...register("sponsor_id", {
-                      pattern: {
-                        value: /^THT\d{16}$/,
-                        message: "Sponsor ID must start with THT + 16 digits",
-                      },
-                      minLength: { value: 19, message: "Must be 19 characters" },
-                    })}
-                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                  />
+  <div className="w-full">
+    <input
+      type="text"
+      {...register("sponsor_id", {
+        validate: (value) => {
+          if (!value) return true; // ⭐ OPTIONAL
+          return (
+            value.length === 12 || "Sponsor ID must be exactly 12 characters"
+          );
+        },
+      })}
+      className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+    />
 
-                  {watch("sponsor_id")?.length > 0 &&
-                    watch("sponsor_id")?.length !== 19 && (
-                      <p className="text-red-600 text-xs mt-1">
-                        Sponsor ID must be exactly 19 characters
-                      </p>
-                    )}
+    {/* Length validation */}
+    {watch("sponsor_id") &&
+      watch("sponsor_id").length > 0 &&
+      watch("sponsor_id").length !== 12 && (
+        <p className="text-red-600 text-xs mt-1">
+          Sponsor ID must be exactly 12 characters
+        </p>
+      )}
 
-                  {errors.sponsor_id && (
-                    <p className="text-red-600 text-xs mt-1">
-                      {errors.sponsor_id.message}
-                    </p>
-                  )}
+    {/* Server-based validation */}
+    {sponsorError && (
+      <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
+    )}
+  </div>
+</div>
 
-                  {sponsorError && (
-                    <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
-                  )}
-                </div>
-              </div>
 
               {/* Sponsor Name */}
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
@@ -306,14 +306,25 @@ export default function SignUpPage() {
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                 <label className="font-semibold text-green-800">Password</label>
 
-                <input
-                  type="password"
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: { value: 8, message: "Must be at least 8 characters" },
-                  })}
-                  className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                />
+                <div className="relative w-full">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: { value: 8, message: "Must be at least 8 characters" },
+                    })}
+                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                  />
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-700 text-sm"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
 
                 {errors.password && (
                   <p className="text-red-600 text-xs">{errors.password.message}</p>
@@ -324,15 +335,26 @@ export default function SignUpPage() {
               <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
                 <label className="font-semibold text-green-800">Confirm Password</label>
 
-                <input
-                  type="password"
-                  {...register("password_confirmation", {
-                    required: "Confirmation is required",
-                    validate: (value) =>
-                      value === watch("password") || "Passwords do not match",
-                  })}
-                  className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                />
+                <div className="relative w-full">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("password_confirmation", {
+                      required: "Confirmation is required",
+                      validate: (value) =>
+                        value === watch("password") || "Passwords do not match",
+                    })}
+                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                  />
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-700 text-sm"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  >
+                    {showConfirmPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
 
                 {errors.password_confirmation && (
                   <p className="text-red-600 text-xs">

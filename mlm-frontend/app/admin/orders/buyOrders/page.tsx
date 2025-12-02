@@ -41,7 +41,9 @@ export default function BuyProductsPage() {
 
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [selectedProductForAdd, setSelectedProductForAdd] = useState<Product | null>(null);
+
   const [loading, setLoading] = useState(false);
+  const [loadingAdd, setLoadingAdd] = useState(false);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 
@@ -52,18 +54,16 @@ export default function BuyProductsPage() {
     return `${BASE_URL}/${path}`.replace(/([^:]\/)\/+/g, "$1");
   }
 
-  // 🔥 Fetch Products With Both Filters Applied
+  // 🔥 Fetch Products With Filters
   async function fetchProducts(stock: string, category: string) {
     try {
       setLoading(true);
 
       let url = ProjectApiList.productsList + "?";
 
-      // Stock filter
       if (stock === "In Stock") url += "stock=1&";
       if (stock === "Out of Stock") url += "stock=0&";
 
-      // Category filter
       if (category !== "All") url += `category=${encodeURIComponent(category)}&`;
 
       const res = await axiosInstance.get(url);
@@ -75,12 +75,12 @@ export default function BuyProductsPage() {
     }
   }
 
-  // Load products initially
+  // Initial load
   useEffect(() => {
     fetchProducts(filterStock, filterCategory);
   }, []);
 
-  // On filter change -> re-fetch
+  // Re-fetch when filters change
   useEffect(() => {
     fetchProducts(filterStock, filterCategory);
   }, [filterStock, filterCategory]);
@@ -98,24 +98,31 @@ export default function BuyProductsPage() {
     setConfirmAdd(true);
   }
 
-  function confirmAddToCart() {
+  // 🔥 FINAL Add To Cart With Loading
+  async function confirmAddToCart() {
     if (!selectedProductForAdd) return;
 
-    const qty = quantities[selectedProductForAdd.id] || 1;
+    try {
+      setLoadingAdd(true);
 
-    addToCart(
-      {
-        id: selectedProductForAdd.id,
-        name: selectedProductForAdd.name,
-        image: selectedProductForAdd.image,
-        mrp: Number(selectedProductForAdd.mrp),
-        bv: Number(selectedProductForAdd.bv),
-      },
-      qty
-    );
+      const qty = quantities[selectedProductForAdd.id] || 1;
 
-    toast.success("Product added to cart!");
-    setConfirmAdd(false);
+      addToCart(
+        {
+          id: selectedProductForAdd.id,
+          name: selectedProductForAdd.name,
+          image: selectedProductForAdd.image,
+          mrp: Number(selectedProductForAdd.mrp),
+          bv: Number(selectedProductForAdd.bv),
+        },
+        qty
+      );
+
+      toast.success("Product added to cart!");
+      setConfirmAdd(false);
+    } finally {
+      setLoadingAdd(false);
+    }
   }
 
   return (
@@ -124,12 +131,13 @@ export default function BuyProductsPage() {
 
       <section className="min-h-screen bg-green-50/40 py-10 px-6 sm:px-10">
         <div className="max-w-7xl mx-auto">
+          
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <h1 className="text-2xl font-bold text-green-800">Buy Product</h1>
 
             <div className="flex flex-wrap items-center gap-4">
-              
+
               {/* STOCK FILTER */}
               <select
                 value={filterStock}
@@ -155,83 +163,97 @@ export default function BuyProductsPage() {
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <div key={product.id} className="bg-white border border-green-100 rounded-lg shadow-sm p-4 relative">
-                
-                {/* Stock Badge */}
-                <span
-                  className={`absolute top-3 left-3 px-2 py-1 text-xs font-semibold rounded ${
-                    product.stock ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-                  }`}
-                >
-                  {product.stock ? "In Stock" : "Out of Stock"}
-                </span>
+          {loading ? (
+            <p className="text-center text-green-700 py-10">Loading Products...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <div key={product.id} className="bg-white border border-green-100 rounded-lg shadow-sm p-4 relative">
 
-                {/* Image */}
-                <div
-                  className="flex justify-center items-center h-40 mb-4 cursor-pointer"
-                  onClick={() => router.push(`/admin/orders/buyOrders/${product.id}`)}
-                >
-                  <Image
-                    src={buildImageUrl(product.image)}
-                    alt={product.name}
-                    width={120}
-                    height={120}
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-
-                {/* Name */}
-                <h2 className="text-sm font-semibold text-gray-800 truncate text-center">{product.name}</h2>
-
-                {/* Price */}
-                <div className="text-sm text-gray-600 text-center mt-1">
-                  MRP ₹ {Number(product.mrp).toFixed(2)}
-                </div>
-
-                {/* BV */}
-                <div className="text-xs text-gray-500 text-center mb-3">BV {product.bv}</div>
-
-                {/* Quantity */}
-                <div className="flex justify-center items-center gap-2 mt-2">
-                  <button
-                    className="w-6 h-6 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
-                    onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 0) - 1)}
-                    disabled={!product.stock}
+                  {/* Stock Badge */}
+                  <span
+                    className={`absolute top-3 left-3 px-2 py-1 text-xs font-semibold rounded ${
+                      product.stock ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                    }`}
                   >
-                    -
-                  </button>
-
-                  <span className="text-sm font-semibold w-5 text-center">
-                    {quantities[product.id] || 0}
+                    {product.stock ? "In Stock" : "Out of Stock"}
                   </span>
 
-                  <button
-                    className="w-6 h-6 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
-                    onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 0) + 1)}
-                    disabled={!product.stock}
+                  {/* Image */}
+                  <div
+                    className="flex justify-center items-center h-40 mb-4 cursor-pointer"
+                    onClick={() => router.push(`/admin/orders/buyOrders/${product.id}`)}
                   >
-                    +
-                  </button>
-                </div>
+                    <Image
+                      src={buildImageUrl(product.image)}
+                      alt={product.name}
+                      width={120}
+                      height={120}
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
 
-                {/* Buy Button */}
-                <div className="flex justify-center items-center gap-2 mt-4">
-                  <button
-                    disabled={!product.stock}
-                    className={`px-10 py-1 rounded text-white text-sm font-medium ${
-                      product.stock ? "bg-blue-900 hover:bg-blue-950" : "bg-gray-400 cursor-not-allowed"
-                    }`}
-                    onClick={() => handleBuyClick(product)}
-                  >
-                    Buy
-                  </button>
+                  {/* Name */}
+                  <h2 className="text-sm font-semibold text-gray-800 text-center truncate">
+                    {product.name}
+                  </h2>
+
+                  {/* Price */}
+                  <div className="text-sm text-gray-600 text-center mt-1">
+                    MRP ₹ {Number(product.mrp).toFixed(2)}
+                  </div>
+
+                  {/* BV */}
+                  <div className="text-xs text-gray-500 text-center mb-3">
+                    BV {product.bv}
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="flex justify-center items-center gap-2 mt-2">
+                    <button
+                      className="w-6 h-6 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
+                      onClick={() =>
+                        handleQuantityChange(product.id, (quantities[product.id] || 0) - 1)
+                      }
+                      disabled={!product.stock}
+                    >
+                      -
+                    </button>
+
+                    <span className="text-sm font-semibold w-5 text-center">
+                      {quantities[product.id] || 0}
+                    </span>
+
+                    <button
+                      className="w-6 h-6 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
+                      onClick={() =>
+                        handleQuantityChange(product.id, (quantities[product.id] || 0) + 1)
+                      }
+                      disabled={!product.stock}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Buy Button */}
+                  <div className="flex justify-center items-center gap-2 mt-4">
+                    <button
+                      disabled={!product.stock}
+                      className={`px-10 py-1 rounded text-white text-sm font-medium ${
+                        product.stock
+                          ? "bg-blue-900 hover:bg-blue-950"
+                          : "bg-gray-400 cursor-not-allowed"
+                      }`}
+                      onClick={() => handleBuyClick(product)}
+                    >
+                      Buy
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -248,12 +270,25 @@ export default function BuyProductsPage() {
           </p>
 
           <DialogFooter>
-            <Button onClick={confirmAddToCart} className="bg-green-700 text-white">
-              Yes, Add
+
+            {/* Add Button with Loading */}
+            <Button
+              onClick={confirmAddToCart}
+              className="bg-green-700 text-white flex items-center gap-2"
+              disabled={loadingAdd}
+            >
+              {loadingAdd && (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              )}
+              {loadingAdd ? "Adding..." : "Yes, Add"}
             </Button>
+
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" disabled={loadingAdd}>
+                Cancel
+              </Button>
             </DialogClose>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -16,6 +16,7 @@ use App\Http\Controllers\GrievanceController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\DistrictController;
+use App\Http\Controllers\DashboardController;
 
 // test
 Route::get('/test', function () {
@@ -115,10 +116,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products/delete', [ProductController::class, 'destroy']);
     
     // Order routes
-    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders', action: [OrderController::class, 'index']);
     Route::post('/orders/store', [OrderController::class, 'store']);
     Route::get('/orders/show', [OrderController::class, 'show']);
     Route::post('/orders/status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/refund', [OrderController::class, 'refund']);
     
     // Role routes
     Route::get('/roles', [RoleController::class, 'index']);
@@ -148,6 +150,16 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Contact routes (admin only)
     Route::get('/contacts', [ContactController::class, 'index']);
+    
+    // Dashboard routes
+    Route::get('/admin/dashboard', [DashboardController::class, 'getAdminDashboardData']);
+    Route::get('/admin/charts/monthly-sales', [DashboardController::class, 'getMonthlySalesOverview']);
+    Route::get('/admin/charts/user-growth', [DashboardController::class, 'getUserGrowthTrend']);
+    Route::get('/admin/charts/user-distribution', [DashboardController::class, 'getUserDistribution']);
+    Route::get('/admin/charts/orders-sales-trend', [DashboardController::class, 'getOrdersSalesTrend']);
+    Route::get('/admin/recent-joins', [DashboardController::class, 'getRecentJoins']);
+    Route::get('/admin/recent-orders', [DashboardController::class, 'getRecentOrders']);
+    Route::get('/user/dashboard', [DashboardController::class, 'getUserDashboardData']);
     
     // State routes
     Route::post('/states/store', [StateController::class, 'store']);

@@ -13,6 +13,7 @@ interface LevelBonusEntry {
   min_bv: number | string;
   bonus: number;
   processed: boolean;
+  message?: string;
 }
 
 interface ReportRow {
@@ -68,7 +69,6 @@ export default function LevelBonusReports() {
       if (res.data.success) {
         const reports = res.data.reports.data || [];
         setData(reports);
-
         setTotalPages(res.data.reports.last_page || 1);
       }
     } catch (error) {
@@ -132,10 +132,9 @@ export default function LevelBonusReports() {
                   </tr>
                 ) : (
                   data.map((row, idx) => (
-                    <>
+                    <React.Fragment key={row.id}>
                       {/* MAIN ROW */}
                       <tr
-                        key={row.id}
                         className="border-b hover:bg-green-50 cursor-pointer"
                         onClick={() => toggleRow(row.id)}
                       >
@@ -178,40 +177,49 @@ export default function LevelBonusReports() {
                                   </tr>
                                 </thead>
 
-                               <tbody>
-  {row.level_bonuses_data.map((lvl:any, i) => (
-    <tr key={i} className="border-b align-top">
-      <td className="p-2">{lvl.level}</td>
-      <td className="p-2">{lvl.users_count}</td>
-      <td className="p-2">{lvl.min_bv}</td>
-      <td className="p-2">{lvl.bonus}</td>
+                                <tbody>
+                                  {row.level_bonuses_data.map(
+                                    (lvl, i) => (
+                                      <tr
+                                        key={i}
+                                        className="border-b align-top"
+                                      >
+                                        <td className="p-2">{lvl.level}</td>
+                                        <td className="p-2">
+                                          {lvl.users_count}
+                                        </td>
+                                        <td className="p-2">{lvl.min_bv}</td>
+                                        <td className="p-2">{lvl.bonus}</td>
 
-      <td className="p-2">
-        {lvl.processed ? (
-          <span className="text-green-700 font-semibold">Completed</span>
-        ) : (
-          <div className="flex flex-col">
-            <span className="text-red-500 font-semibold">Not Completed </span>
+                                        <td className="p-2">
+                                          {lvl.processed ? (
+                                            <span className="text-green-700 font-semibold">
+                                              Completed
+                                            </span>
+                                          ) : (
+                                            <div className="flex flex-col">
+                                              <span className="text-red-500 font-semibold">
+                                                Not Completed
+                                              </span>
 
-            {/* Show message ONLY if processed=false and message exists */}
-            {lvl.message && (
-              <span className="text-xs text-gray-600 mt-1 italic">
-                {lvl.message}
-              </span>
-            )}
-          </div>
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                                              {lvl.message && (
+                                                <span className="text-xs text-gray-600 mt-1 italic">
+                                                  {lvl.message}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    )
+                                  )}
+                                </tbody>
                               </table>
                             </div>
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))
                 )}
               </tbody>

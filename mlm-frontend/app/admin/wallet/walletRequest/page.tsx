@@ -14,20 +14,19 @@ export default function WalletRequestPage() {
   const [txnId, setTxnId] = useState("");
   const [remarks, setRemarks] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const [confirmModal, setConfirmModal] = useState(false); // ⬅ Confirmation Modal
+  const [submitLoading, setSubmitLoading] = useState(false); // For main submit button
+  const [apiLoading, setApiLoading] = useState(false); // For confirm modal API button
 
+  const [confirmModal, setConfirmModal] = useState(false);
+
+  /* =========================================================
+     FINAL API SUBMISSION 
+  ========================================================= */
   const handleFinalSubmit = async () => {
-    if (!amount || !txnId) {
-      toast.error("Amount & Transaction ID are required.");
-      return;
-    }
+    setApiLoading(true);
 
     try {
-      setLoading(true);
-      setConfirmModal(false); // close modal
-
       const token = localStorage.getItem("token");
       const formData = new FormData();
 
@@ -57,6 +56,8 @@ export default function WalletRequestPage() {
         setTxnId("");
         setRemarks("");
         setFile(null);
+
+        setConfirmModal(false);
       }
     } catch (error: any) {
       if (error?.response?.data?.errors) {
@@ -68,29 +69,55 @@ export default function WalletRequestPage() {
         toast.error("Failed to submit wallet request!");
       }
     } finally {
-      setLoading(false);
+      setApiLoading(false);
     }
   };
 
+  /* =========================================================
+     MAIN FORM SUBMIT → OPEN CONFIRMATION MODAL
+  ========================================================= */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setConfirmModal(true); // show confirm modal
+
+    if (!amount || !txnId) {
+      toast.error("Amount & Transaction ID are required.");
+      return;
+    }
+
+    setSubmitLoading(true);
+
+    setTimeout(() => {
+      setSubmitLoading(false);
+      setConfirmModal(true);
+    }, 300); // small UX delay
   };
 
   return (
     <>
       <AdminHeader />
 
+      {/* 🔥 Fullscreen Overlay Loader (When API is sending) */}
+      {apiLoading && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
+          <div className="flex flex-col items-center gap-3">
+            <span className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></span>
+            <p className="text-white text-sm">Submitting your request...</p>
+          </div>
+        </div>
+      )}
+
       {/* 🔔 Confirmation Modal */}
-      {confirmModal && (
+      {confirmModal && !apiLoading && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
           <div className="bg-white shadow-xl p-6 rounded-lg max-w-md w-full">
             <h2 className="text-lg font-bold text-green-700 mb-3">
               Confirm Wallet Request
             </h2>
+
             <p className="text-sm text-gray-700 mb-2">
               <b>Amount:</b> ₹{amount}
             </p>
+
             <p className="text-sm text-gray-700 mb-4">
               <b>Transaction ID:</b> {txnId}
             </p>
@@ -99,25 +126,37 @@ export default function WalletRequestPage() {
               <button
                 className="px-4 py-2 rounded-md border border-gray-300 text-gray-700"
                 onClick={() => setConfirmModal(false)}
+                disabled={apiLoading}
               >
                 Cancel
               </button>
+
               <button
-                className="px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800"
+                className="px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 disabled:opacity-60"
                 onClick={handleFinalSubmit}
-                disabled={loading}
+                disabled={apiLoading}
               >
-                {loading ? "Submitting..." : "Confirm"}
+                {apiLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Submitting...
+                  </span>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Main Page */}
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto space-y-2">
           <h1 className="text-2xl font-bold text-green-800">Wallet Request</h1>
-          <p className="text-green-700 pb-5">Submit deposit details to add funds.</p>
+          <p className="text-green-700 pb-5">
+            Submit deposit details to add funds.
+          </p>
 
           <div className="bg-white shadow-md rounded-xl border border-green-100 p-6">
             <form
@@ -158,21 +197,22 @@ export default function WalletRequestPage() {
 
                 {/* Amount */}
                 <div>
-                  <label className="block text-sm text-green-800">Deposit Amount</label>
+                  <label className="block text-sm text-green-800">
+                    Deposit Amount
+                  </label>
                   <input
                     type="number"
                     min="1"
                     value={amount}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (Number(val) >= 0) setAmount(val); // Block negative input in state
+                      if (Number(val) >= 0) setAmount(val);
                     }}
                     placeholder="Enter amount"
                     className="w-full border border-green-300 rounded-md px-3 py-2"
-                    onWheel={(e) => (e.target as HTMLInputElement).blur()} // Prevent scroll input change
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   />
                 </div>
-
 
                 {/* Transaction ID */}
                 <div>
@@ -219,15 +259,22 @@ export default function WalletRequestPage() {
                 <div>
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-green-700 text-white py-2 rounded-md hover:bg-green-800"
+                    disabled={submitLoading}
+                    className="w-full bg-green-700 text-white py-2 rounded-md hover:bg-green-800 disabled:opacity-60"
                   >
-                    Submit
+                    {submitLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Processing...
+                      </span>
+                    ) : (
+                      "Submit"
+                    )}
                   </button>
                 </div>
               </div>
 
-              {/* Bank Info & Static QR */}
+              {/* Bank Info + QR */}
               <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                 <h3 className="text-lg font-semibold text-red-600 mb-4">
                   Bank Details
