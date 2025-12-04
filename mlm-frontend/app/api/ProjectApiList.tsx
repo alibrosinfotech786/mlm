@@ -53,19 +53,19 @@ const ProjectApiList = {
   api_deleteRole: `${BASE_URL}/roles/delete`,
   api_updateRole: `${BASE_URL}/roles/update`,
   api_getRolesById: `${BASE_URL}/roles/show`,
-  
+
   // BV-History
   api_getBVHistoryofUser: `${BASE_URL}/bv-history/show`,
-  
-  
+
+
   // BV-History
   MLM_HIERARCHY: `${BASE_URL}/users/mlm-hierarchy-4-levels`,
-  
+
   // Teams
   MLM_HIERARCHY_LIST: `${BASE_URL}/users/mlm-hierarchy-list`,
   SPONSORED_USERS: `${BASE_URL}/users/sponsored-users`,
-  
-  
+
+
   // Wallet transaction 
   WALLET_TRANSACTION_ADD: `${BASE_URL}/wallet-transactions/store`,
   WALLET_TRANSACTION_LIST: `${BASE_URL}/wallet-transactions`,
@@ -80,40 +80,45 @@ const ProjectApiList = {
   GRIEVANCE_UPDATE: `${BASE_URL}/grievances/update`,
   GRIEVANCE_STATUS: `${BASE_URL}/grievances/status`,
   GRIEVANCE_DELETE: `${BASE_URL}/grievances/delete`,
-  
-  
-    // Direct Business Report   
-    BONUS_RECEIVED: `${BASE_URL}/users/bonus-received`,
-    TEAM_PERFORMANCE: `${BASE_URL}/users/team-performance`,
-    BINARY_TEAM_BV: `${BASE_URL}/users/binary-team-bv`,
-    
-    // My Income
-    MATCHING_INCOME: `${BASE_URL}/users/daily-matching-income`,
-    
-    
-    // Contact us
-    post_contact_us: `${BASE_URL}/contact`,
-    get_contact_us: `${BASE_URL}/contacts`,
-    
-    
-    // Masters
-    getState: `${BASE_URL}/states`,
-    postState: `${BASE_URL}/states/store`,
-    updateState: `${BASE_URL}/states/update`,
-    deleteState: `${BASE_URL}/states/delete`,
-
-    getDistrict: `${BASE_URL}/districts`,
-    postDistrict: `${BASE_URL}/districts/store`,
-    updateDistrict: `${BASE_URL}/districts/update`,
-    deleteDistrict: `${BASE_URL}/districts/update`,
-    getDistrictByState: `${BASE_URL}/districts/by-state`,
 
 
-    // Dashboard
-    adminDashboard: `${BASE_URL}/admin/dashboard`,
-    COMPREHENSIVE_DASHBOARD: `${BASE_URL}/user/comprehensive-dashboard`,
-    MONTHLY_GROWTH: `${BASE_URL}/user/monthly-growth`,
-    BONUS_BREAKDOWN: `${BASE_URL}/user/bonus-breakdown`,
+  // Direct Business Report   
+  BONUS_RECEIVED: `${BASE_URL}/users/bonus-received`,
+  TEAM_PERFORMANCE: `${BASE_URL}/users/team-performance`,
+  BINARY_TEAM_BV: `${BASE_URL}/users/binary-team-bv`,
+
+  // My Income
+  MATCHING_INCOME: `${BASE_URL}/users/daily-matching-income`,
+
+
+  // Contact us
+  post_contact_us: `${BASE_URL}/contact`,
+  get_contact_us: `${BASE_URL}/contacts`,
+
+
+  // Masters
+  getState: `${BASE_URL}/states`,
+  postState: `${BASE_URL}/states/store`,
+  updateState: `${BASE_URL}/states/update`,
+  deleteState: `${BASE_URL}/states/delete`,
+
+  getDistrict: `${BASE_URL}/districts`,
+  postDistrict: `${BASE_URL}/districts/store`,
+  updateDistrict: `${BASE_URL}/districts/update`,
+  deleteDistrict: `${BASE_URL}/districts/update`,
+  getDistrictByState: `${BASE_URL}/districts/by-state`,
+
+
+  // Dashboard
+  adminDashboard: `${BASE_URL}/admin/dashboard`,
+  COMPREHENSIVE_DASHBOARD: `${BASE_URL}/user/comprehensive-dashboard`,
+  MONTHLY_GROWTH: `${BASE_URL}/user/monthly-growth`,
+  BONUS_BREAKDOWN: `${BASE_URL}/user/bonus-breakdown`,
+
+  // Dashboard
+  UPLOADS: `${BASE_URL}/uploads`,
+
+
 
 };
 

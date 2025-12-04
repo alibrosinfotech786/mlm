@@ -53,6 +53,7 @@ export default function Sidebar() {
     { name: "Manage Role", module: "Manage Role", href: "/admin/roles" },
 
     { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
+    { name: "File Manager", module: "File Manager", href: "/admin/fileManager" },
 
     {
       name: "Masters",

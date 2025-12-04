@@ -47,6 +47,7 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Add State",
     "Add District",
     "All Wallet Request",
+    "File Manager",
   ];
 
   const [permissions, setPermissions] = useState(

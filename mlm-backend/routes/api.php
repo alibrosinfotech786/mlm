@@ -17,6 +17,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UploadController;
 
 // test
 Route::get('/test', function () {
@@ -50,6 +51,11 @@ Route::post('/contact', [ContactController::class, 'store']);
 Route::get('/states', [StateController::class, 'index']);
 Route::get('/districts', [DistrictController::class, 'index']);
 Route::get('/districts/by-state', [DistrictController::class, 'getByState']);
+
+// Upload routes (public)
+Route::post('/uploads', [UploadController::class, 'store']);
+Route::get('/uploads', [UploadController::class, 'index']);
+Route::delete('/uploads', [UploadController::class, 'destroy']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -48,6 +48,7 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     "Add State",
     "Add District",
     "All Wallet Request",
+    "File Manager",
   ];
 
   const [permissions, setPermissions] = useState<any>([]);

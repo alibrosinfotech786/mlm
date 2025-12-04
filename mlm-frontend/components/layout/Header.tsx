@@ -15,6 +15,7 @@ const navItems = [
   { name: "Products", href: "/pages/products" },
   { name: "Our Team", href: "/pages/ourTeam" },
   { name: "Gallery", href: "/pages/gallery" },
+  { name: "File", href: "/pages/fileManager" },
   { name: "Contact Us", href: "/pages/contactUs" },
 ];
 
@@ -25,7 +26,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
-      <div className="max-w-[1400px] mx-auto flex items-center justify-between px-4 sm:px-8 lg:px-20 py-3 relative">
+      <div className="max-w-[1700px] mx-auto flex items-center justify-between px-4 sm:px-8 lg:px-20 py-3 relative">
         
         {/* ===== Logo + Title (Medium) ===== */}
         <Link href="/" className="flex items-center gap-3 group">
