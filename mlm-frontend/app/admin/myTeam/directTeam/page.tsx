@@ -37,7 +37,7 @@ export default function DirectTeamPage() {
           mobile: item.phone || "-",
           placement: item.position || "-",
           activationDate: item.created_at?.split("T")[0] || "-",
-          pv: Number(item.bv) || 0,
+          bv: Number(item.bv) || 0,
           cbp: Number(item.wallet_balance) || 0,
         }));
 
@@ -70,13 +70,12 @@ export default function DirectTeamPage() {
     { key: "mobile", label: "Mobile No." },
     { key: "placement", label: "Placement" },
     { key: "activationDate", label: "Activation Date" },
-    { key: "pv", label: "PV" },
-    { key: "cbp", label: "CBP" },
+    { key: "bv", label: "BV" },
   ];
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">

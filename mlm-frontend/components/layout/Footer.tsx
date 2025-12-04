@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaXTwitter, FaYoutube } from "react-icons/fa6";
 
 const Footer = () => {
@@ -9,6 +10,7 @@ const Footer = () => {
     <footer className="border-t border-border bg-card text-foreground/80">
       <div className="container mx-auto px-6 md:px-12 lg:px-24 py-10">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-10 items-start">
+
           {/* Logo */}
           <div className="flex flex-col items-start">
             <Image
@@ -24,21 +26,47 @@ const Footer = () => {
           <div>
             <h3 className="text-base font-semibold text-primary mb-3">Company</h3>
             <ul className="space-y-2 text-sm">
-              {[
-                "About Tathastu Ayurveda",
-                "Career",
-                "Grievance Redressal",
-                "Contact Us",
-                "Notification History",
-                "Our Branches",
-                "Heart to Heart",
-              ].map((text) => (
-                <li key={text}>
-                  <a href="#" className="hover:text-primary transition-colors">
-                    {text}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link href="/pages/aboutUs" className="hover:text-primary transition-colors">
+                  About Tathastu Ayurveda
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/contactUs" className="hover:text-primary transition-colors">
+                  Contact Us
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/ourTeam" className="hover:text-primary transition-colors">
+                  Our Team
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/event" className="hover:text-primary transition-colors">
+                  Events
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/gallery" className="hover:text-primary transition-colors">
+                  Gallery
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/training" className="hover:text-primary transition-colors">
+                  Training
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/pages/products" className="hover:text-primary transition-colors">
+                  Our Products
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -46,20 +74,15 @@ const Footer = () => {
           <div>
             <h3 className="text-base font-semibold text-primary mb-3">Policy</h3>
             <ul className="space-y-2 text-sm">
-              {[
-                "Cancellation & Refund Process",
-                "Delivery Area",
-                "Disclaimer",
-                "Privacy & Security Policy",
-                "Shipping Policy",
-                "Terms & Conditions",
-              ].map((text) => (
-                <li key={text}>
-                  <a href="#" className="hover:text-primary transition-colors">
-                    {text}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link
+                  href="/pages/refundPolicies"
+                  className="hover:text-primary transition-colors"
+                >
+                  Cancellation & Refund Process
+                </Link>
+              </li>
+
             </ul>
           </div>
 
@@ -77,32 +100,36 @@ const Footer = () => {
           {/* Customer Care */}
           <div>
             <h3 className="text-base font-semibold text-primary mb-3">Customer Care</h3>
+
             <p className="text-sm">
               Email:{" "}
-              <a href="mail:tathastuayurveda@zohomail.in" className="text-primary font-medium hover:underline">
-               tathastuayurveda@zohomail.in
+              <a
+                href="mailto:info@tathastuayurveda.world"
+                className="text-primary font-medium hover:underline"
+              >
+                info@tathastuayurveda.world
               </a>
             </p>
+
             <p className="text-sm">
               Phone:{" "}
-              <a href="tel:01143101234" className="text-primary font-medium hover:underline">
-                011-43101234
-              </a>
-            </p>
-            <p className="text-sm mb-4">
-              Toll Free:{" "}
-              <a href="tel:18001023424" className="text-primary font-medium hover:underline">
-                1800-102-3424
+              <a
+                href="tel:9199977007"
+                className="text-primary font-medium hover:underline"
+              >
+                +91 99977007
               </a>
             </p>
 
             {/* Social */}
-            <div className="flex space-x-4 text-primary text-lg">
-              {[FaInstagram, FaFacebookF, FaXTwitter, FaYoutube].map((Icon, i) => (
-                <a key={i} href="#" className="hover:text-secondary transition-colors">
-                  <Icon />
-                </a>
-              ))}
+            <div className="flex space-x-4 text-primary text-lg mt-4">
+              {[FaInstagram, FaFacebookF, FaXTwitter, FaYoutube].map(
+                (Icon, i) => (
+                  <a key={i} href="#" className="hover:text-secondary transition-colors">
+                    <Icon />
+                  </a>
+                )
+              )}
             </div>
           </div>
         </div>

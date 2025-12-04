@@ -41,9 +41,21 @@ class TrainingController extends Controller
                 'venue' => 'required|string|max:255',
                 'duration' => 'required|string|max:255',
                 'description' => 'required|string',
+                'course_fee' => 'nullable|numeric|min:0',
+                'syllabus' => 'nullable|array',
+                'level' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            $training = Training::create($request->all());
+            $data = $request->except(['image']);
+            
+            if ($request->hasFile('image')) {
+                $fileName = time() . '_' . $request->file('image')->getClientOriginalName();
+                $request->file('image')->move(public_path('uploads/trainings'), $fileName);
+                $data['image'] = 'uploads/trainings/' . $fileName;
+            }
+
+            $training = Training::create($data);
 
             return response()->json([
                 'success' => true,
@@ -99,6 +111,30 @@ class TrainingController extends Controller
         }
     }
 
+    public function showById($id)
+    {
+        try {
+            $training = Training::with('participants')->findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'training' => $training
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'TRAINING_NOT_FOUND',
+                'message' => 'Training not found'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'TRAINING_FETCH_ERROR',
+                'message' => 'Failed to fetch training',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request)
     {
         try {
@@ -111,10 +147,22 @@ class TrainingController extends Controller
                 'venue' => 'string|max:255',
                 'duration' => 'string|max:255',
                 'description' => 'string',
+                'course_fee' => 'nullable|numeric|min:0',
+                'syllabus' => 'nullable|array',
+                'level' => 'nullable|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             $training = Training::findOrFail($request->id);
-            $training->update($request->except('id'));
+            $data = $request->except(['id', 'image']);
+            
+            if ($request->hasFile('image')) {
+                $fileName = time() . '_' . $request->file('image')->getClientOriginalName();
+                $request->file('image')->move(public_path('uploads/trainings'), $fileName);
+                $data['image'] = 'uploads/trainings/' . $fileName;
+            }
+            
+            $training->update($data);
 
             return response()->json([
                 'success' => true,

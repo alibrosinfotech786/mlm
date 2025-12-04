@@ -25,12 +25,16 @@ class KycDetail extends Model
         'pan_card_path',
         'cancelled_cheque_path',
         'status',
+        'nominee_name',
+        'relation',
+        'confirm_disclaimer',
     ];
 
     protected function casts(): array
     {
         return [
             'dob' => 'date',
+            'confirm_disclaimer' => 'boolean',
         ];
     }
 

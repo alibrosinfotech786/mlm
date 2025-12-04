@@ -16,21 +16,28 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+
+const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
+
+// resolve path
+function resolveImage(path?: string) {
+  if (!path) return "/images/no-image.png";
+  return `${BASE}/${path}`.replace(/([^:]\/)\/+/g, "$1");
+}
 
 export default function TrainingsPage() {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Modals
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [openJoinModal, setOpenJoinModal] = useState(false);
 
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
 
-  // Controlled form used for create/update
   const [form, setForm] = useState<any>({
     id: "",
     date: "",
@@ -40,188 +47,202 @@ export default function TrainingsPage() {
     venue: "",
     duration: "",
     description: "",
+    level: "",
+    course_fee: "",
+    image: null,
+    syllabus: [], // ⬅ NEW
   });
 
-  // Read logged user id from localStorage.user.user_id (adjust if different)
-  const userData =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "{}")
-      : {};
-  const userId = userData?.user_id ?? null;
+  const [moduleInput, setModuleInput] = useState(""); // ⬅ for adding modules
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Table state
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
 
   const today = new Date().toISOString().split("T")[0];
 
-  // -------------------------
-  // Fetch trainings list
-  // -------------------------
+  /*============ FETCH TRAININGS ============*/
   async function fetchTrainings() {
     try {
       setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.training);
-      const list = res.data.trainings || [];
 
-      // attach participantsCount and isJoined flag
-      const enhanced = list.map((t: any) => {
-        const participants = t.participants || [];
-        const participantsCount = participants.length;
-        const isJoined = participants.some(
-          (p: any) => String(p.user_id) === String(userId)
-        );
-        return { ...t, participantsCount, isJoined };
-      });
+      const enhanced = res.data.trainings.map((t: any) => ({
+        ...t,
+        participantsCount: t?.participants?.length || 0,
+      }));
 
       setTrainings(enhanced);
+    } catch {
+      toast.error("Failed to load trainings");
+    } finally {
       setLoading(false);
-    } catch (err: any) {
-      setLoading(false);
-      toast.error(err?.response?.data?.message || "Failed to load trainings");
     }
   }
 
   useEffect(() => {
     fetchTrainings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // -------------------------
-  // Create training
-  // -------------------------
-  async function handleCreateTraining(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      // API expects payload like user provided example
-      await axiosInstance.post(ProjectApiList.createTraining, {
-        date: form.date,
-        time: form.time,
-        topic: form.topic,
-        trainer: form.trainer,
-        venue: form.venue,
-        duration: form.duration,
-        description: form.description,
-      });
+  /*============ ADD MODULE ============*/
+  function addModule() {
+    if (!moduleInput.trim()) return;
 
-      toast.success("Training created successfully!");
-      setOpenCreateModal(false);
-      setForm({
-        id: "",
-        date: "",
-        time: "",
-        topic: "",
-        trainer: "",
-        venue: "",
-        duration: "",
-        description: "",
-      });
-      fetchTrainings();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create training");
+    setForm((prev: any) => ({
+      ...prev,
+      syllabus: [...prev.syllabus, moduleInput.trim()],
+    }));
+
+    setModuleInput("");
+  }
+
+  /*============ REMOVE MODULE ============*/
+  function removeModule(index: number) {
+    setForm((prev: any) => ({
+      ...prev,
+      syllabus: prev.syllabus.filter((_: any, i: number) => i !== index),
+    }));
+  }
+
+  /*============ IMAGE HANDLER ============*/
+  function handleImageChange(e: any) {
+    const file = e.target.files[0];
+    if (file) {
+      setForm({ ...form, image: file });
+      setPreviewImage(URL.createObjectURL(file));
     }
   }
 
-  // -------------------------
-  // Open edit modal and populate form
-  // -------------------------
+  /*============ CREATE TRAINING ============*/
+  async function handleCreateTraining(e: any) {
+    e.preventDefault();
+
+    const fd = new FormData();
+    fd.append("date", form.date);
+    fd.append("time", form.time);
+    fd.append("topic", form.topic);
+    fd.append("trainer", form.trainer);
+    fd.append("venue", form.venue);
+    fd.append("duration", form.duration);
+    fd.append("description", form.description);
+    fd.append("level", form.level);
+    fd.append("course_fee", form.course_fee);
+
+    // send syllabus array
+    form.syllabus.forEach((mod: string, index: number) => {
+      fd.append(`syllabus[${index}]`, mod);
+    });
+
+    if (form.image) fd.append("image", form.image);
+
+    try {
+      await axiosInstance.post(ProjectApiList.createTraining, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Training created!");
+      setOpenCreateModal(false);
+      resetForm();
+      fetchTrainings();
+    } catch (err) {
+      toast.error("Failed to create training");
+    }
+  }
+
+  function resetForm() {
+    setForm({
+      id: "",
+      date: "",
+      time: "",
+      topic: "",
+      trainer: "",
+      venue: "",
+      duration: "",
+      description: "",
+      level: "",
+      course_fee: "",
+      image: null,
+      syllabus: [],
+    });
+    setPreviewImage(null);
+  }
+
+  /*============ OPEN EDIT MODAL ============*/
   function openEdit(training: any) {
     setSelectedTraining(training);
+
     setForm({
       id: training.id,
-      date: (training.date || "").split("T")[0],
-      time: training.time || "",
-      topic: training.topic || "",
-      trainer: training.trainer || "",
-      venue: training.venue || "",
-      duration: training.duration || "",
-      description: training.description || "",
+      date: training.date?.split("T")[0],
+      time: training.time,
+      topic: training.topic,
+      trainer: training.trainer,
+      venue: training.venue,
+      duration: training.duration,
+      description: training.description,
+      level: training.level,
+      course_fee: training.course_fee,
+      image: null,
+      syllabus: training.syllabus || [],
     });
+
+    setPreviewImage(resolveImage(training.image));
     setOpenEditModal(true);
   }
 
-  // -------------------------
-  // Update training
-  // -------------------------
-  async function handleUpdateTraining(e: React.FormEvent) {
+  /*============ UPDATE TRAINING ============*/
+  async function handleUpdateTraining(e: any) {
     e.preventDefault();
+
+    const fd = new FormData();
+    fd.append("id", form.id);
+    fd.append("date", form.date);
+    fd.append("time", form.time);
+    fd.append("topic", form.topic);
+    fd.append("trainer", form.trainer);
+    fd.append("venue", form.venue);
+    fd.append("duration", form.duration);
+    fd.append("description", form.description);
+    fd.append("level", form.level);
+    fd.append("course_fee", form.course_fee);
+
+    // send syllabus array
+    form.syllabus.forEach((mod: string, index: number) => {
+      fd.append(`syllabus[${index}]`, mod);
+    });
+
+    if (form.image) fd.append("image", form.image);
+
     try {
-      // API expects same payload as create but with id
-      await axiosInstance.post(ProjectApiList.updateTraining, {
-        id: form.id,
-        date: form.date,
-        time: form.time,
-        topic: form.topic,
-        trainer: form.trainer,
-        venue: form.venue,
-        duration: form.duration,
-        description: form.description,
+      await axiosInstance.post(ProjectApiList.updateTraining, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast.success("Training updated!");
       setOpenEditModal(false);
       fetchTrainings();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to update training");
+    } catch {
+      toast.error("Failed to update training");
     }
   }
 
-  // -------------------------
-  // Open delete modal
-  // -------------------------
-  function openDelete(training: any) {
-    setSelectedTraining(training);
-    setOpenDeleteModal(true);
-  }
-
-  // -------------------------
-  // Delete training
-  // -------------------------
+  /*============ DELETE TRAINING ============*/
   async function handleDeleteTraining() {
-    if (!selectedTraining) return;
     try {
       await axiosInstance.post(ProjectApiList.deleteTraining, {
         id: selectedTraining.id,
       });
+
       toast.success("Training deleted!");
       setOpenDeleteModal(false);
       fetchTrainings();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete training");
+    } catch {
+      toast.error("Failed to delete");
     }
   }
 
-  // -------------------------
-  // Open join modal
-  // -------------------------
-  function openJoin(training: any) {
-    setSelectedTraining(training);
-    setOpenJoinModal(true);
-  }
-
-  // -------------------------
-  // Join training
-  // -------------------------
-  async function handleJoinTraining() {
-    if (!selectedTraining) return;
-    try {
-      await axiosInstance.post(ProjectApiList.joinTraining, {
-        training_id: selectedTraining.id,
-      });
-      toast.success("Joined training successfully!");
-      setOpenJoinModal(false);
-      fetchTrainings();
-    } catch (err: any) {
-      // show backend message if available (e.g. ALREADY_JOINED)
-      const msg = err?.response?.data?.message || "Failed to join training";
-      toast.error(msg);
-    }
-  }
-
-  // -------------------------
-  // Columns for DataTable
-  // -------------------------
+  /*============ TABLE ============*/
   const columns = [
     {
       key: "sno",
@@ -232,23 +253,27 @@ export default function TrainingsPage() {
     {
       key: "date",
       label: "Date",
-      render: (value: string) => {
-        if (!value) return "-";
-        const d = value.split("T")[0];
-        const [y, m, d2] = d.split("-");
-        return `${d2}-${m}-${y}`;
-      },
+      render: (value: string) => value.split("T")[0],
     },
     { key: "time", label: "Time" },
     { key: "topic", label: "Topic" },
     { key: "trainer", label: "Trainer" },
     { key: "venue", label: "Venue" },
     { key: "duration", label: "Duration" },
+    { key: "level", label: "Level" },
     {
-      key: "participantsCount",
-      label: "Participants",
-      render: (v: number) => (
-        <span className="font-semibold text-blue-600">{v ?? 0}</span>
+      key: "course_fee",
+      label: "Fee",
+      render: (v: any) => `₹${v}`,
+    },
+    {
+      key: "image",
+      label: "Image",
+      render: (v: any) => (
+        <img
+          src={resolveImage(v)}
+          className="w-12 h-12 rounded object-cover"
+        />
       ),
     },
     {
@@ -256,93 +281,138 @@ export default function TrainingsPage() {
       label: "Actions",
       render: (_: any, row: any) => (
         <div className="flex items-center gap-3">
-          {/* Edit */}
-          <button
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            onClick={() => openEdit(row)}
-          >
+          <button className="text-blue-600" onClick={() => openEdit(row)}>
             Edit
           </button>
-
-          {/* Delete */}
           <button
-            className="text-red-600 hover:text-red-800 text-sm font-medium"
-            onClick={() => openDelete(row)}
+            className="text-red-600"
+            onClick={() => {
+              setSelectedTraining(row);
+              setOpenDeleteModal(true);
+            }}
           >
             Delete
           </button>
-
-          {/* Join / Joined */}
-          {/* {row.isJoined ? (
-            <span className="text-green-600 font-semibold">✔ Joined</span>
-          ) : (
-            <button
-              className="text-green-600 hover:text-green-800 text-sm font-medium underline"
-              onClick={() => openJoin(row)}
-            >
-              Join
-            </button>
-          )} */}
         </div>
       ),
     },
   ];
 
-  // -------------------------
-  // Search + pagination
-  // -------------------------
-  const filtered = trainings.filter(
-    (t: any) =>
-      t.topic?.toLowerCase().includes(search.toLowerCase()) ||
-      t.trainer?.toLowerCase().includes(search.toLowerCase())
+  const filtered = trainings.filter((t: any) =>
+    t.topic.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalPages = Math.ceil(filtered.length / entries);
-  const start = (page - 1) * entries;
-  const paginatedData = filtered.slice(start, start + entries);
+
+  const paginatedData = filtered.slice(
+    (page - 1) * entries,
+    (page - 1) * entries + entries
+  );
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
-      <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
+      <section className="py-10 px-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-green-800">Trainings</h1>
-              <p className="text-green-700 text-sm">
-                Create, manage & join trainings
-              </p>
-            </div>
 
-            {/* Create button + modal */}
+          {/* HEADER */}
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-semibold">Trainings</h1>
+
             <Dialog open={openCreateModal} onOpenChange={setOpenCreateModal}>
               <DialogTrigger asChild>
-                <Button className="bg-green-700 text-white">+ Create</Button>
+                <Button className="bg-green-600 text-white">+ Add Training</Button>
               </DialogTrigger>
 
-              <DialogContent className="sm:max-w-2xl">
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create Training</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleCreateTraining} className="space-y-4 mt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <InputBox
-                      label="Date"
-                      type="date"
-                      name="date"
-                      form={form}
-                      setForm={setForm}
-                      min={today}
-                    />
+                {/* CREATE FORM */}
+                <form onSubmit={handleCreateTraining} className="space-y-4">
+
+                  {/* BASIC INPUTS */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} min={today} />
                     <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
-                    <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
-                    <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
-                    <InputBox label="Venue" type="text" name="venue" form={form} setForm={setForm} />
-                    <InputBox label="Duration" type="text" name="duration" form={form} setForm={setForm} />
-                    <InputBox label="Description" type="text" name="description" form={form} setForm={setForm} />
+                    <InputBox label="Topic" name="topic" form={form} setForm={setForm} />
+                    <InputBox label="Trainer" name="trainer" form={form} setForm={setForm} />
+                    <InputBox label="Venue" name="venue" form={form} setForm={setForm} />
+                    <InputBox label="Duration" name="duration" form={form} setForm={setForm} />
+                    <InputBox label="Level" name="level" form={form} setForm={setForm} />
+                    <InputBox label="Course Fee (INR)" type="number" name="course_fee" form={form} setForm={setForm} />
+                  </div>
+
+                  {/* DESCRIPTION */}
+                  <textarea
+                    rows={3}
+                    className="w-full border rounded-md p-2"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Description"
+                  />
+
+                  {/* ===========================
+                        SYLLABUS MODULE INPUT
+                  ============================ */}
+                  <div>
+                    <label className="font-medium">Syllabus Modules</label>
+
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="text"
+                        className="border p-2 rounded w-full"
+                        placeholder="Enter module name"
+                        value={moduleInput}
+                        onChange={(e) => setModuleInput(e.target.value)}
+                      />
+                      <Button type="button" onClick={addModule}>
+                        Add
+                      </Button>
+                    </div>
+
+                    {/* LIST OF MODULES */}
+                    <div className="mt-3 space-y-2">
+                      {form.syllabus.map((mod: string, index: number) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-green-50 p-2 rounded"
+                        >
+                          <span>{mod}</span>
+                          <button
+                            type="button"
+                            className="text-red-600"
+                            onClick={() => removeModule(index)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* IMAGE */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium">Training Banner</label>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="border p-2 rounded"
+                    />
+
+                    {previewImage && (
+                      <Image
+                        src={previewImage}
+                        alt="preview"
+                        width={200}
+                        height={150}
+                        className="rounded mt-2 border"
+                      />
+                    )}
                   </div>
 
                   <DialogFooter>
@@ -356,42 +426,101 @@ export default function TrainingsPage() {
             </Dialog>
           </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={paginatedData}
-              loading={loading}
-              search={search}
-              onSearchChange={setSearch}
-              entries={entries}
-              onEntriesChange={setEntries}
-              page={page}
-              totalPages={totalPages}
-              onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-              onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-              emptyMessage="No trainings found"
-            />
-          </div>
+          {/* TABLE */}
+          <DataTable
+            columns={columns}
+            data={paginatedData}
+            loading={loading}
+            search={search}
+            onSearchChange={setSearch}
+            entries={entries}
+            onEntriesChange={setEntries}
+            page={page}
+            totalPages={totalPages}
+            onPrevious={() => setPage(Math.max(1, page - 1))}
+            onNext={() => setPage(Math.min(totalPages, page + 1))}
+            emptyMessage="No trainings found"
+          />
         </div>
       </section>
 
-      {/* EDIT Modal */}
+      {/* ============================================
+            EDIT TRAINING
+      ============================================ */}
       <Dialog open={openEditModal} onOpenChange={setOpenEditModal}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Training</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleUpdateTraining} className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} min={today} />
+          <form onSubmit={handleUpdateTraining} className="space-y-4">
+
+            <div className="grid grid-cols-2 gap-4">
+              <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} />
               <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
-              <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
-              <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
-              <InputBox label="Venue" type="text" name="venue" form={form} setForm={setForm} />
-              <InputBox label="Duration" type="text" name="duration" form={form} setForm={setForm} />
-              <InputBox label="Description" type="text" name="description" form={form} setForm={setForm} />
+              <InputBox label="Topic" name="topic" form={form} setForm={setForm} />
+              <InputBox label="Trainer" name="trainer" form={form} setForm={setForm} />
+              <InputBox label="Venue" name="venue" form={form} setForm={setForm} />
+              <InputBox label="Duration" name="duration" form={form} setForm={setForm} />
+              <InputBox label="Level" name="level" form={form} setForm={setForm} />
+              <InputBox label="Course Fee" type="number" name="course_fee" form={form} setForm={setForm} />
+            </div>
+
+            <textarea
+              rows={3}
+              className="w-full border rounded-md p-2"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+
+            {/* SYLLABUS EDIT */}
+            <div>
+              <label className="font-medium">Syllabus Modules</label>
+
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  className="border p-2 rounded w-full"
+                  placeholder="Enter module name"
+                  value={moduleInput}
+                  onChange={(e) => setModuleInput(e.target.value)}
+                />
+                <Button type="button" onClick={addModule}>Add</Button>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {form.syllabus.map((mod: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center bg-green-50 p-2 rounded"
+                  >
+                    <span>{mod}</span>
+                    <button
+                      type="button"
+                      className="text-red-600"
+                      onClick={() => removeModule(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Image */}
+            <div>
+              <label>Training Image</label>
+              <input type="file" onChange={handleImageChange} className="border p-2 rounded-md w-full" />
+
+              {previewImage && (
+                <Image
+                  src={previewImage}
+                  alt="preview"
+                  width={200}
+                  height={150}
+                  className="rounded mt-2 border"
+                />
+              )}
             </div>
 
             <DialogFooter>
@@ -404,40 +533,17 @@ export default function TrainingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DELETE Modal */}
+      {/* DELETE MODAL */}
       <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Training</DialogTitle>
           </DialogHeader>
+          <p>Are you sure you want to delete this training?</p>
 
-          <p className="text-gray-700 mt-2">Are you sure you want to delete this training?</p>
-
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <Button className="bg-red-600 text-white" onClick={handleDeleteTraining}>
               Delete
-            </Button>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* JOIN Modal */}
-      <Dialog open={openJoinModal} onOpenChange={setOpenJoinModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Join Training</DialogTitle>
-          </DialogHeader>
-
-          <p className="text-gray-700 mt-2">
-            Are you sure you want to join: <span className="font-semibold">{selectedTraining?.topic}</span>?
-          </p>
-
-          <DialogFooter className="mt-4">
-            <Button className="bg-green-600 text-white" onClick={handleJoinTraining}>
-              Yes, Join
             </Button>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
@@ -449,18 +555,18 @@ export default function TrainingsPage() {
   );
 }
 
-// Reusable InputBox component (controlled)
-function InputBox({ label, type, name, placeholder = "", form, setForm, min }: any) {
+/*============ INPUT COMPONENT ============*/
+function InputBox({ label, type = "text", name, form, setForm, placeholder = "", min }: any) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <label className="text-sm font-medium">{label}</label>
       <input
         type={type}
+        min={min}
         placeholder={placeholder}
         required
-        min={min}
-        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-500 transition-all"
-        value={form?.[name] ?? ""}
+        className="border p-2 rounded-md"
+        value={form[name] ?? ""}
         onChange={(e) => setForm({ ...form, [name]: e.target.value })}
       />
     </div>

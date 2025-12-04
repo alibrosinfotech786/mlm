@@ -114,7 +114,7 @@ export default function UsersPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-8 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">

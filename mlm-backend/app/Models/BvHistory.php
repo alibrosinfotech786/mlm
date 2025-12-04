@@ -23,4 +23,9 @@ class BvHistory extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
+
+    public function referenceUser()
+    {
+        return $this->belongsTo(User::class, 'reference_id', 'user_id');
+    }
 }

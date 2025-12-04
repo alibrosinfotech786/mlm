@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 
-export default function EditRoleModal({ role, onClose, onUpdated }:any) {
+export default function EditRoleModal({ role, onClose, onUpdated }: any) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [roleName, setRoleName] = useState("");
@@ -43,8 +43,12 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     "Sponser Matching Income",
     "Repurchasing Income",
     "Grievance",
+    "ContactUS",
     "BV Summary",
+    "Add State",
+    "Add District",
     "All Wallet Request",
+    "File Manager",
   ];
 
   const [permissions, setPermissions] = useState<any>([]);
@@ -58,8 +62,8 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
       const data = res.data.role;
       setRoleName(data.name);
 
-      const perms:any = modules.map((module) => {
-        const found = data.permissions?.find((p:any) => p.module === module);
+      const perms: any = modules.map((module) => {
+        const found = data.permissions?.find((p: any) => p.module === module);
 
         return (
           found || {
@@ -84,17 +88,20 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
     fetchRoleDetails();
   }, []);
 
-  const togglePermission = (index:any, key:any) => {
-    const updated:any = [...permissions];
+  const togglePermission = (index: any, key: any) => {
+    const updated: any = [...permissions];
     updated[index][key] = !updated[index][key];
     setPermissions(updated);
   };
 
   const toggleSelectAll = () => {
-    const allSelected:any = permissions.every((p:any) => p.create && p.read && p.update && p.delete);
+    const allSelected: any = permissions.every(
+      (p: any) =>
+        p.create && p.read && p.update && p.delete
+    );
 
     setPermissions(
-      permissions.map((p:any) => ({
+      permissions.map((p: any) => ({
         ...p,
         create: !allSelected,
         read: !allSelected,
@@ -125,9 +132,10 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-3">
-      <div className="bg-white w-full max-w-3xl p-6 rounded-xl shadow-xl">
-        <h2 className="text-xl font-semibold mb-4">Edit Role</h2>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 md:px-3">
+      <div className="bg-white w-full max-w-lg md:max-w-3xl rounded-xl shadow-xl p-4 md:p-6 h-[90vh] overflow-y-auto">
+
+        <h2 className="text-xl md:text-2xl font-semibold mb-4">Edit Role</h2>
 
         {initialLoading ? (
           <div className="text-center py-6 text-gray-500">Loading...</div>
@@ -140,12 +148,13 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
               onChange={(e) => setRoleName(e.target.value)}
             />
 
-            <div className="mb-3">
-              <input type="checkbox" onChange={toggleSelectAll} /> Select All
+            <div className="mb-3 flex items-center gap-2">
+              <input type="checkbox" onChange={toggleSelectAll} />
+              <span>Select All</span>
             </div>
 
-            <div className="border rounded max-h-64 overflow-y-auto">
-              <table className="w-full text-sm">
+            <div className="border rounded max-h-52 md:max-h-64 overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[500px] text-xs md:text-sm">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="p-2">Module</th>
@@ -157,7 +166,7 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
                 </thead>
 
                 <tbody>
-                  {permissions.map((perm:any, i:any) => (
+                  {permissions.map((perm: any, i: any) => (
                     <tr key={i} className="border-b">
                       <td className="p-2">{perm.module}</td>
 
@@ -176,12 +185,15 @@ export default function EditRoleModal({ role, onClose, onUpdated }:any) {
               </table>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={onClose} className="border px-4 py-2 rounded">
+            <div className="flex flex-col md:flex-row justify-end gap-3 mt-4">
+              <button onClick={onClose} className="border px-4 py-2 rounded w-full md:w-auto">
                 Cancel
               </button>
 
-              <button onClick={handleSubmit} className="bg-green-700 text-white px-4 py-2 rounded">
+              <button
+                onClick={handleSubmit}
+                className="bg-green-700 text-white px-4 py-2 rounded w-full md:w-auto"
+              >
                 {loading ? "Updating..." : "Update Role"}
               </button>
             </div>

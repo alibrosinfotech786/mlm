@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import TreeNode from "./TreeNode";
 
@@ -6,57 +7,103 @@ interface TreeNodeData {
   id: string;
   name: string;
   photo?: string | null;
-  left?: TreeNodeData;
-  right?: TreeNodeData;
+  left?: TreeNodeData | null;
+  right?: TreeNodeData | null;
 }
+
 
 interface TreeViewProps {
   data: TreeNodeData;
-  isRoot?: boolean;
   onNodeDoubleClick: (id: string) => void;
+  level?: number;   // ⭐ NEW
 }
 
-const TreeView: React.FC<TreeViewProps> = ({ data, isRoot = true, onNodeDoubleClick }) => {
+const TreeView: React.FC<TreeViewProps> = ({
+  data,
+  onNodeDoubleClick,
+  level = 0,         // ⭐ DEFAULT ROOT LEVEL
+}) => {
+  const isVacant = data.id === "Vacant";
+
+  const children: TreeNodeData[] = [];
+  if (data.left) children.push(data.left);
+  if (data.right) children.push(data.right);
+
+  const hasTwoChildren = children.length === 2;
+
+  /* ============================================
+      LEVEL-BASED HORIZONTAL LINE WIDTH
+     ============================================ */
+
+  let lineLeft = "25%";
+  let lineRight = "25%";
+
+  if (level === 0) {
+    // Under ROOT
+    lineLeft = "25.5%";
+    lineRight = "23%";
+  } else if (level === 1) {
+    lineLeft = "24.8%";
+    lineRight = "22%";
+  } else if (level === 2) {
+    lineLeft = "22%";
+    lineRight = "22%";
+  } else if (level === 3) {
+    lineLeft = "17%";
+    lineRight = "18%";
+  }
+
   return (
     <div className="flex justify-center">
-      <ul className="flex flex-col items-center">
-        <li className="relative flex flex-col items-center">
+<ul className="flex flex-col items-center min-w-max">
+        <li className="flex flex-col items-center relative">
+
+          {/* Node */}
           <TreeNode
             id={data.id}
             name={data.name}
+            data={data}   // contains phone, sponsor_name, bv
             photo={data.photo}
-            onDoubleClick={() => onNodeDoubleClick(data.id)}
+            onDoubleClick={() => !isVacant && onNodeDoubleClick(data.id)}
           />
 
-          {(data.left || data.right) && (
-            <ul
-              className={`flex justify-center pt-4 relative ${
-                !isRoot
-                  ? "before:content-[''] before:absolute before:top-[-4px] before:left-1/2 before:-translate-x-1/2 before:w-0 before:h-3 before:border-l before:border-green-700"
-                  : ""
-              }`}
-            >
-              {data.left && (
-                <li className="relative px-3 before:content-[''] before:absolute before:top-0 before:right-0 before:w-[50%] before:border-t before:border-green-700 after:content-[''] after:absolute after:top-0 after:right-0 after:h-3 after:border-l after:border-green-700">
-                  <TreeView
-                    data={data.left}
-                    isRoot={false}
-                    onNodeDoubleClick={onNodeDoubleClick}
-                  />
-                </li>
-              )}
 
-              {data.right && (
-                <li className="relative px-3 before:content-[''] before:absolute before:top-0 before:left-0 before:w-[50%] before:border-t before:border-green-700 after:content-[''] after:absolute after:top-0 after:left-0 after:h-3 after:border-l after:border-green-700">
-                  <TreeView
-                    data={data.right}
-                    isRoot={false}
-                    onNodeDoubleClick={onNodeDoubleClick}
-                  />
-                </li>
-              )}
-            </ul>
+          {/* Stop if no children */}
+          {children.length === 0 ? null : (
+            <>
+              {/* Vertical line */}
+              <div className="w-[2px] h-6 bg-green-700"></div>
+
+              {/* CHILDREN WRAPPER */}
+<div className="relative flex justify-center gap-10 sm:gap-14 md:gap-20">
+
+                {/* HORIZONTAL LINE = controlled by LEVEL */}
+                {hasTwoChildren && (
+                  <div
+                    className="absolute top-0 h-[2px] bg-green-700"
+                    style={{
+                      left: lineLeft,
+                      right: lineRight,
+                    }}
+                  ></div>
+                )}
+
+                {/* RENDER CHILDREN */}
+                {children.map((child, index) => (
+                  <div key={index} className="flex flex-col items-center">
+                    <div className="w-[2px] h-6 bg-green-700"></div>
+                    <TreeView
+                      data={child}
+                      onNodeDoubleClick={onNodeDoubleClick}
+                      level={level + 1}   // ⭐ PASS LEVEL TO CHILD
+                    />
+                  </div>
+                ))}
+
+              </div>
+            </>
           )}
+
         </li>
       </ul>
     </div>
@@ -64,4 +111,3 @@ const TreeView: React.FC<TreeViewProps> = ({ data, isRoot = true, onNodeDoubleCl
 };
 
 export default TreeView;
-

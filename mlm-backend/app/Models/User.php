@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'address',
+        'state_id',
+        'district_id',
         'sponsor_id',
         'sponsor_name',
         'root_id',
@@ -36,6 +38,7 @@ class User extends Authenticatable
         'wallet_balance',
         'rank',
         'role',
+        'package',
         'isActive',
     ];
 
@@ -91,6 +94,16 @@ class User extends Authenticatable
         return $this->hasOne(KycDetail::class);
     }
     
+    public function state()
+    {
+        return $this->belongsTo(State::class);
+    }
+    
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
+    
 
     
     public function bvHistories()
@@ -98,10 +111,26 @@ class User extends Authenticatable
         return $this->hasMany(BvHistory::class, 'user_id', 'user_id');
     }
     
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id', 'user_id');
+    }
+    
     public function updateStatusBasedOnBv()
     {
         $isActive = $this->bv >= 1000;
-        $this->update(['isActive' => $isActive]);
+        $package = $this->getPackageByBv($this->bv);
+        $this->update(['isActive' => $isActive, 'package' => $package]);
+    }
+
+    public function getPackageByBv($bv)
+    {
+        if ($bv >= 10000) return 'legend';
+        if ($bv >= 4000) return 'leader';
+        if ($bv >= 2000) return 'performer';
+        if ($bv >= 1000) return 'builder';
+        if ($bv >= 500) return 'starter';
+        return 'starter';
     }
 
     protected static function boot()
@@ -109,27 +138,28 @@ class User extends Authenticatable
         parent::boot();
         
         static::creating(function ($user) {
-            $user->user_id = self::generateUserId();
+            // user_id will be set in the controller with state and district codes
         });
     }
 
-    private static function generateUserId()
+    public static function generateUserId($stateCode, $districtCode)
     {
-        $year = date('Y');
-        $month = date('m');
-        $prefix = "THT{$year}{$month}";
+        $prefix = strtoupper($stateCode . str_pad($districtCode, 2, '0', STR_PAD_LEFT));
         
-        $lastUser = self::where('user_id', 'like', $prefix . '%')
+        // Get the highest number for this specific state-district combination
+        $lastUser = self::where('user_id', 'LIKE', $prefix . '-%')
             ->orderBy('user_id', 'desc')
             ->first();
         
-        if ($lastUser) {
-            $lastNumber = (int) substr($lastUser->user_id, -10);
+        if ($lastUser && $lastUser->user_id) {
+            // Extract last 7 digits after the hyphen
+            $parts = explode('-', $lastUser->user_id);
+            $lastNumber = (int) end($parts);
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
         }
         
-        return $prefix . str_pad($nextNumber, 10, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
     }
 }

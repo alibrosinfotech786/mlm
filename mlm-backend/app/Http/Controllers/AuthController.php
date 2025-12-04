@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Mail\WelcomeEmail;
+use App\Mail\WelcomeLetterEmail;
+use App\Mail\IdCardEmail;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -21,24 +27,30 @@ class AuthController extends Controller
             $validationRules = [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'phone' => 'required|string|max:15',
-                'address' => 'required|string',
-                'nominee' => 'nullable|string|max:255',
+                'phone' => 'required|string|max:15|unique:users',
+                'state_id' => 'required|integer',
+                'district_id' => 'required|integer',
                 'password' => 'required|string|min:8|confirmed',
                 'sponsor_id' => 'nullable|exists:users,user_id',
                 'sponsor_name' => 'nullable|string|max:255',
                 'position' => 'nullable|in:left,right',
-
             ];
             
             $request->validate($validationRules);
 
+            // Get state and district codes for user_id generation
+            $state = \App\Models\State::find($request->state_id);
+            $district = \App\Models\District::find($request->district_id);
+            
             $userData = [
+                'user_id' => \App\Models\User::generateUserId($state->code, $district->code),
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
-                'address' => $request->address,
-                'nominee' => $request->nominee,
+                'address' => '',
+                'state_id' => $request->state_id,
+                'district_id' => $request->district_id,
+                'nominee' => '',
                 'password' => Hash::make($request->password),
                 'role' => 'User',
             ];
@@ -62,8 +74,16 @@ class AuthController extends Controller
             }
 
             $user = User::create($userData);
-
+            
             $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Send welcome email
+            try {
+                Mail::to($user->email)->send(new WelcomeEmail($user));
+            } catch (Exception $mailException) {
+                // Log email error but don't fail registration
+                \Log::error('Welcome email failed to send: ' . $mailException->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -178,11 +198,13 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email',
+                'user_id' => 'required|string',
                 'password' => 'required',
             ]);
 
-            if (!Auth::attempt($request->only('email', 'password'))) {
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'success' => false,
                     'error_type' => 'AUTHENTICATION_ERROR',
@@ -190,7 +212,6 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $user = User::where('email', $request->email)->first();
             $token = $user->createToken('auth_token')->plainTextToken;
             
             $role = Role::where('name', $user->role)->first();
@@ -284,6 +305,90 @@ class AuthController extends Controller
                 'error_type' => 'TRANSACTION_PASSWORD_ERROR',
                 'message' => 'Failed to set transaction password',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendWelcomeLetter(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            // Render welcome letter HTML into PDF using Dompdf
+            $html = view('emails.welcome-letter', ['user' => $user])->render();
+
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfData = $dompdf->output();
+
+            // Send welcome letter email with PDF attachment
+            Mail::to($user->email)->send(new WelcomeLetterEmail($user, $pdfData));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Welcome letter sent successfully to ' . $user->email
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'EMAIL_SEND_ERROR',
+                'message' => 'Failed to send welcome letter email',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendIdCard(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            // Convert profile picture to base64 if it exists
+            $profilePictureBase64 = null;
+            if ($user->profile_picture) {
+                $profilePath = public_path($user->profile_picture);
+                if (file_exists($profilePath)) {
+                    $imageData = file_get_contents($profilePath);
+                    $imageInfo = getimagesize($profilePath);
+                    $mimeType = $imageInfo['mime'] ?? 'image/jpeg';
+                    $profilePictureBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
+            }
+
+            // Render ID card view into PDF using Dompdf directly
+            $html = view('emails.id-card-attachment', [
+                'user' => $user,
+                'profilePictureBase64' => $profilePictureBase64
+            ])->render();
+
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfData = $dompdf->output();
+
+            Mail::to($user->email)->send(new IdCardEmail($user, $pdfData));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ID Card sent successfully to ' . $user->email,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'ID_CARD_EMAIL_ERROR',
+                'message' => 'Failed to send ID Card email',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

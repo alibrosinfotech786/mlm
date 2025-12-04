@@ -1,35 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, LogOut } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, setIsOpen }: any) {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [userPermissions, setUserPermissions] = useState<any[]>([]);
 
-  // 👉 Load User + Permissions from localStorage
+  // Load permissions
   useEffect(() => {
-    const permissions = JSON.parse(localStorage.getItem("permissions") || "{}");
-
-    if (permissions) {
-      setUserPermissions(permissions);
-    }
+    const permissions = JSON.parse(localStorage.getItem("permissions") || "[]");
+    setUserPermissions(permissions || []);
   }, []);
 
-  // ✔ Helper: check if module has READ permission
   const hasReadPermission = (moduleName: string) => {
-    const found = userPermissions.find((p) => p.module === moduleName);
+    const found = userPermissions?.find?.((p) => p.module === moduleName);
     return found?.read === true;
   };
 
-  const toggleDropdown = (section: string) => {
-    setOpenDropdown(openDropdown === section ? null : section);
+  const toggleDropdown = (name: string) => {
+    setOpenDropdown(openDropdown === name ? null : name);
   };
 
   const handleLogout = () => {
@@ -40,34 +36,38 @@ export default function Sidebar() {
     });
 
     localStorage.clear();
-    setShowConfirm(false);
     window.location.href = "/auth/signin";
   };
 
-  // ============================================
-  // 🔥 Sidebar Navigation Items WITH Module Names
-  // ============================================
+  // Sidebar Menu List
   const navLinks = [
     { name: "Dashboard", module: "Dashboard", href: "/admin/dashboard" },
-
     { name: "Manage Role", module: "Manage Role", href: "/admin/roles" },
-
     { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
+    { name: "File Manager", module: "File Manager", href: "/admin/fileManager" },
+
+    {
+      name: "Masters",
+      items: [
+        { name: "Add State", module: "Add State", href: "/admin/masters/state" },
+        { name: "Add District", module: "Add District", href: "/admin/masters/district" },
+      ],
+    },
 
     {
       name: "Events",
       items: [
         { name: "Add Events", module: "Add Events", href: "/admin/events" },
-        { name: "Join Events", module: "Join Events", href: "/admin/events/joinEvents" }
-      ]
+        { name: "Join Events", module: "Join Events", href: "/admin/events/joinEvents" },
+      ],
     },
 
     {
       name: "Training",
       items: [
         { name: "Add Training", module: "Add Training", href: "/admin/training" },
-        { name: "Join Training", module: "Join Training", href: "/admin/training/joinTraining" }
-      ]
+        { name: "Join Training", module: "Join Training", href: "/admin/training/joinTraining" },
+      ],
     },
 
     {
@@ -92,53 +92,27 @@ export default function Sidebar() {
       ],
     },
 
-    {
-      name: "My Business",
-      items: [
-        { name: "Direct Business", module: "Direct Business", href: "/admin/myBusiness/directBusiness" },
-        { name: "Team Business", module: "Team Business", href: "/admin/myBusiness/teamBusiness" },
-        { name: "Business Summary", module: "Business Summary", href: "/admin/myBusiness/businessSummary" },
-      ],
-    },
-
-    {
-      name: "Wallet",
-      items: [
-        { name: "Wallet Request", module: "Wallet Request", href: "/admin/wallet/walletRequest" },
-        { name: "All Wallet Request", module: "All Wallet Request", href: "/admin/wallet/allWalletRequests" },
-        { name: "Wallet Status", module: "Wallet Status", href: "/admin/wallet/walletStatus" },
-        { name: "Wallet Summary", module: "Wallet Summary", href: "/admin/wallet/walletSummary" },
-        { name: "BV Summary", module: "BV Summary", href: "/admin/wallet/bvSummary" },
-      ],
-    },
-
-    {
-      name: "Orders",
-      items: [
-        { name: "Add Products", module: "Add Products", href: "/admin/products" },
-        { name: "All Orders", module: "All Orders", href: "/admin/orders/allOrders" },
-        { name: "Buy Products", module: "Buy Products", href: "/admin/orders/buyOrders" },
-        { name: "Orders Status", module: "Orders Status", href: "/admin/orders/orderStatus" },
-        { name: "Orders Summary", module: "Orders Summary", href: "/admin/orders/orderSummary" },
-      ],
-    },
-
-    {
-      name: "My Income",
-      items: [
-        { name: "Sponser Income", module: "Sponser Income", href: "/admin/Income/sponserIncome" },
-        { name: "Matching Income", module: "Matching Income", href: "/admin/Income/matchingIncome" },
-        { name: "Sponser Matching Income", module: "Sponser Matching Income", href: "/admin/Income/sponserMatchingIncome" },
-        { name: "Repurchasing Income", module: "Repurchasing Income", href: "/admin/Income/repurchasingIncome" },
-      ],
-    },
-
     { name: "Grievance", module: "Grievance", href: "/admin/grievance" },
+    { name: "Contact Us", module: "ContactUS", href: "/admin/contactUs" },
   ];
 
   return (
     <>
-      <aside className="fixed top-0 left-0 h-screen w-64 bg-green-700 text-white flex flex-col shadow-xl">
+      {/* Overlay (mobile only) */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+        />
+      )}
+
+    <aside
+  className={cn(
+    "fixed inset-0 h-screen w-64 bg-green-700 text-white flex flex-col shadow-xl z-50 transform transition-transform duration-300",
+    isOpen ? "translate-x-0" : "-translate-x-full",
+    "md:translate-x-0 md:inset-auto md:top-0 md:left-0" // desktop fixes
+  )}
+>
 
         <div className="p-5 text-2xl font-bold text-center border-b border-green-600">
           Tathastu Panel
@@ -146,7 +120,6 @@ export default function Sidebar() {
 
         <nav className="flex-1 mt-4 overflow-y-auto scrollbar-hide">
           {navLinks.map((link) => {
-            // ============ Parent Item WITHOUT submenu ============
             if (!link.items) {
               if (!hasReadPermission(link.module)) return null;
 
@@ -154,8 +127,9 @@ export default function Sidebar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={() => setIsOpen(false)}
                   className={cn(
-                    "block px-6 py-3  hover:bg-green-600 hover:text-white",
+                    "block px-6 py-3 hover:bg-green-600 hover:text-white",
                     pathname === link.href && "bg-green-600"
                   )}
                 >
@@ -164,29 +138,28 @@ export default function Sidebar() {
               );
             }
 
-            // ============ Parent Item WITH Sub Items ============
-            const visibleSubItems = link.items.filter((sub) =>
-              hasReadPermission(sub.module)
+            const visibleItems = link.items.filter((s) =>
+              hasReadPermission(s.module)
             );
-
-            if (visibleSubItems.length === 0) return null;
+            if (visibleItems.length === 0) return null;
 
             return (
               <div key={link.name}>
                 <button
                   onClick={() => toggleDropdown(link.name)}
-                  className="w-full flex justify-between px-5 py-3 pl-6 hover:bg-green-600 hover:text-white"
+                  className="w-full flex justify-between px-6 py-3 hover:bg-green-600 hover:text-white"
                 >
                   {link.name}
                   {openDropdown === link.name ? <ChevronUp /> : <ChevronDown />}
                 </button>
 
                 {openDropdown === link.name && (
-                  <div className="ml-4 border-l border-green-500/40 pl-4">
-                    {visibleSubItems.map((sub) => (
+                  <div className="ml-4 border-l border-green-500 pl-4">
+                    {visibleItems.map((sub) => (
                       <Link
                         key={sub.href}
                         href={sub.href}
+                        onClick={() => setIsOpen(false)}
                         className={cn(
                           "block px-3 py-2 text-sm hover:bg-green-600 hover:text-white",
                           pathname === sub.href && "bg-green-600 font-semibold"
@@ -204,9 +177,8 @@ export default function Sidebar() {
 
         <button
           onClick={() => setShowConfirm(true)}
-          className="m-4 py-2.5 bg-green-600 rounded-md hover:bg-green-500 hover:text-white flex items-center justify-center gap-2"
+          className="m-4 py-2.5 bg-green-600 rounded-md hover:bg-green-500"
         >
-          {/* <LogOut size={16} />  */}
           Logout
         </button>
       </aside>

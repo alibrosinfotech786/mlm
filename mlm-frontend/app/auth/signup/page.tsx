@@ -9,15 +9,26 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 
+/* ---------------------- Interfaces ---------------------- */
+interface StateType {
+  id: number;
+  name: string;
+}
+
+interface DistrictType {
+  id: number;
+  name: string;
+}
+
 interface RegisterForm {
   name: string;
   email: string;
   phone: string;
-  address: string;
   sponsor_id: string;
   sponsor_name: string;
   position: string;
-  nominee: string;
+  state_id: string;
+  district_id: string;
   password: string;
   password_confirmation: string;
 }
@@ -27,23 +38,72 @@ export default function SignUpPage() {
     register,
     handleSubmit,
     setValue,
-    formState: { errors, isSubmitting },
     watch,
-  } = useForm<RegisterForm>();
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterForm>({ mode: "onChange" });
 
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
-
   const [serverError, setServerError] = useState("");
   const [sponsorError, setSponsorError] = useState("");
-  const sponsorId = watch("sponsor_id");
+  const [states, setStates] = useState<StateType[]>([]);
+  const [districts, setDistricts] = useState<DistrictType[]>([]);
+  const [isModalSubmitting, setIsModalSubmitting] = useState(false);
 
-  /* ==========================================================
-     AUTO-FETCH SPONSOR NAME
-  ========================================================== */
+  const sponsorId = watch("sponsor_id");
+  const stateId = watch("state_id");
+
+  /* ---------------------- READ REFERRAL FROM URL ---------------------- */
   useEffect(() => {
-    if (!sponsorId) {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const referral = urlParams.get("referral");
+
+      if (referral) {
+        setValue("sponsor_id", referral);
+      }
+    }
+  }, [setValue]);
+
+  /* ---------------------- FETCH STATES ---------------------- */
+  useEffect(() => {
+    async function loadStates() {
+      try {
+        const res = await axiosInstance.get(ProjectApiList.getState);
+        const list = res.data?.data?.data || res.data?.data || [];
+        setStates(list);
+      } catch {
+        console.log("Failed to load states");
+      }
+    }
+    loadStates();
+  }, []);
+
+  /* ---------------------- FETCH DISTRICTS ---------------------- */
+  useEffect(() => {
+    async function loadDistricts() {
+      if (!stateId) return setDistricts([]);
+
+      try {
+        const res = await axiosInstance.get(
+          `${ProjectApiList.getDistrictByState}?state_id=${stateId}`
+        );
+
+        const list = res.data?.data?.data || res.data?.data || [];
+        setDistricts(list);
+      } catch {
+        console.log("Failed to load districts");
+      }
+    }
+
+    loadDistricts();
+  }, [stateId]);
+
+  /* ---------------------- SPONSOR AUTO-FETCH ---------------------- */
+  useEffect(() => {
+    if (!sponsorId || sponsorId.length !== 12) {
       setSponsorError("");
       setValue("sponsor_name", "");
       return;
@@ -62,154 +122,196 @@ export default function SignUpPage() {
           setSponsorError("Invalid Sponsor ID");
           setValue("sponsor_name", "");
         }
-      } catch (err) {
+      } catch {
         setSponsorError("Invalid Sponsor ID");
         setValue("sponsor_name", "");
       }
-    }, 500); // debounce 500ms
+    }, 500);
 
     return () => clearTimeout(delay);
   }, [sponsorId, setValue]);
 
-  /* ==========================================================
-     ON SUBMIT
-  ========================================================== */
-  // const onSubmit: SubmitHandler<RegisterForm> = async (data) => {
-  //   setServerError("");
-
-  //   try {
-  //     const response = await axiosInstance.post(ProjectApiList.REGISTER, data);
-
-  //     if (response.data?.success) {
-  //       window.location.href = "/auth/signin";
-  //     }
-  //   } catch (error: any) {
-  //     setServerError(
-  //       error?.response?.data?.message || "Registration failed! Try again."
-  //     );
-  //   }
-  // };
-
-  const onSubmit: SubmitHandler<RegisterForm> = async (data) => {
-    setFormData(data);      // save form data temporarily
-    setConfirmOpen(true);   // open confirm modal
+  /* ---------------------- SUBMIT → OPEN CONFIRMATION MODAL ---------------------- */
+  const onSubmit: SubmitHandler<RegisterForm> = (data) => {
+    setFormData(data);
+    setConfirmOpen(true);
   };
 
-
+  /* ---------------------- CONFIRM SUBMIT ---------------------- */
   async function confirmSubmit() {
     if (!formData) return;
 
     setServerError("");
+    setIsModalSubmitting(true);
 
     try {
-      const response = await axiosInstance.post(ProjectApiList.REGISTER, formData);
+      const payload = {
+        ...formData,
+        state_id: Number(formData.state_id),
+        district_id: Number(formData.district_id),
+      };
+
+      const response = await axiosInstance.post(ProjectApiList.REGISTER, payload);
 
       if (response.data?.success) {
         window.location.href = "/auth/signin";
       }
     } catch (error: any) {
-      setServerError(
-        error?.response?.data?.message || "Registration failed! Try again."
-      );
+      const apiError = error?.response?.data;
+
+      if (apiError?.errors) {
+        setServerError(Object.values(apiError.errors).flat().join("\n"));
+      } else {
+        setServerError(apiError?.message || "Registration failed! Try again.");
+      }
     }
 
+    setIsModalSubmitting(false);
     setConfirmOpen(false);
   }
-
 
   return (
     <>
       <Header />
 
-      <section className="min-h-screen flex flex-col md:flex-row items-center justify-center px-6 lg:px-20">
-        {/* ===== Left Section ===== */}
-        <div className="w-full md:w-1/2 flex flex-col items-center text-center mb-10">
+      <section className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 sm:py-12">
+
+        {/* Left Panel */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center text-center mb-8 sm:mb-10 lg:mb-0">
           <Image
             src="/images/logo.png"
             alt="Tathastu Ayurveda Logo"
-            width={420}
-            height={420}
-            className="object-contain drop-shadow-md"
+            width={280}
+            height={280}
+            className="object-contain drop-shadow-md w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] md:w-[320px] md:h-[320px] lg:w-[350px] lg:h-[350px] xl:w-[420px] xl:h-[420px]"
+            priority
           />
-          <h2 className="text-3xl font-bold text-green-800 mt-2">
-            TATHASTU AYURVEDA
-          </h2>
-          <p className="text-green-700 text-sm mt-1">
-            Healing Roots, Cultivating Prosperity 🌿
-          </p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-800 mt-2">TATHASTU AYURVEDA</h2>
+          <p className="text-green-700 text-xs sm:text-sm mt-1">Healing Roots, Cultivating Prosperity 🌿</p>
         </div>
 
-        {/* ===== Right Section ===== */}
-        <div className="w-full md:w-1/2 flex justify-center my-10">
-          <div className="relative w-full max-w-2xl rounded-2xl shadow-xl p-10 bg-white">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-green-700 font-semibold text-lg px-6 py-2 rounded-full shadow-md border border-green-200">
+        {/* Right Panel */}
+        <div className="w-full lg:w-1/2 flex justify-center my-6 sm:my-8 lg:my-10">
+          <div className="relative w-full max-w-2xl rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+            <div className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 bg-white text-green-700 font-semibold text-sm sm:text-base md:text-lg px-4 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-md border border-green-200 whitespace-nowrap">
               User Registration
             </div>
 
             {serverError && (
-              <div className="mt-10 mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm text-center">
+              <div className="mt-8 sm:mt-10 mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-xs sm:text-sm text-center whitespace-pre-line">
                 {serverError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-10 space-y-5">
-              {/* Normal Inputs */}
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 sm:mt-10 space-y-3 sm:space-y-4 md:space-y-5">
+
+              {/* Basic Fields */}
               {[
                 { id: "name", label: "Name", type: "text" },
                 { id: "email", label: "Email", type: "email" },
                 { id: "phone", label: "Phone Number", type: "text" },
-                { id: "address", label: "Address", type: "text" },
-                { id: "nominee", label: "Nominee", type: "text" },
               ].map((field) => (
-                <div
-                  key={field.id}
-                  className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4"
-                >
-                  <label className="font-semibold text-green-800">
-                    {field.label}
-                  </label>
-                  <input
-                    {...register(field.id as keyof RegisterForm, {
-                      required: true,
-                    })}
-                    type={field.type}
-                    className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
-                  />
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                  <label className="font-semibold text-green-800 text-sm sm:text-base">{field.label}</label>
+
+                  <div className="w-full">
+                    <input
+                      type={field.type}
+                      {...register(field.id as keyof RegisterForm, { required: true })}
+                      className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                    />
+
+                    {errors[field.id as keyof RegisterForm] && (
+                      <p className="text-red-600 text-xs mt-1">This field is required</p>
+                    )}
+                  </div>
                 </div>
               ))}
 
+              {/* State */}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">State</label>
+                <div className="w-full">
+                  <select
+                    {...register("state_id", { required: true })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                  >
+                    <option value="">Select State</option>
+                    {states.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  {errors.state_id && <p className="text-red-600 text-xs mt-1">State is required</p>}
+                </div>
+              </div>
+
+              {/* District */}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">District</label>
+                <div className="w-full">
+                  <select
+                    {...register("district_id", { required: true })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                  >
+                    <option value="">Select District</option>
+                    {districts.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  {errors.district_id && <p className="text-red-600 text-xs mt-1">District is required</p>}
+                </div>
+              </div>
+
               {/* Sponsor ID */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor ID</label>
-                <input
-                  {...register("sponsor_id", { required: true })}
-                  type="text"
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Sponsor ID</label>
+
+                <div className="w-full">
+                  <input
+                    type="text"
+                    {...register("sponsor_id", {
+                      validate: (value) => {
+                        if (!value) return true; // ⭐ OPTIONAL
+                        return (
+                          value.length === 12 || "Sponsor ID must be exactly 12 characters"
+                        );
+                      },
+                    })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                  />
+
+                  {/* Length validation */}
+                  {watch("sponsor_id") &&
+                    watch("sponsor_id").length > 0 &&
+                    watch("sponsor_id").length !== 12 && (
+                      <p className="text-red-600 text-xs mt-1">
+                        Sponsor ID must be exactly 12 characters
+                      </p>
+                    )}
+
+                  {/* Server-based validation */}
+                  {sponsorError && (
+                    <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
+                  )}
+                </div>
               </div>
 
-              {/* Sponsor Name AUTO FILLED */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor Name</label>
+              {/* Sponsor Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Sponsor Name</label>
                 <input
-                  {...register("sponsor_name")}
-                  type="text"
                   disabled
-                  className="w-full px-5 py-2.5 rounded-full bg-gray-100 border border-green-200 text-gray-600"
+                  {...register("sponsor_name")}
+                  className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-gray-100 border border-green-200 text-gray-600 text-sm sm:text-base"
                 />
-                {sponsorError && (
-                  <p className="text-red-600 text-xs col-span-2 text-right">
-                    {sponsorError}
-                  </p>
-                )}
               </div>
 
-              {/* position */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Position</label>
+              {/* Position */}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Position</label>
                 <select
                   {...register("position", { required: true })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
+                  className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
                 >
                   <option value="left">Left</option>
                   <option value="right">Right</option>
@@ -217,102 +319,124 @@ export default function SignUpPage() {
               </div>
 
               {/* Password */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Password</label>
-                <input
-                  type="password"
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
-                  })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
-                />
-                {errors.password && (
-                  <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Password</label>
 
+                <div className="relative w-full">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: { value: 8, message: "Must be at least 8 characters" },
+                    })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base pr-16 sm:pr-20"
+                  />
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-green-700 text-xs sm:text-sm"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+
+                {errors.password && (
+                  <p className="text-red-600 text-xs mt-1 col-span-full sm:col-span-2 sm:col-start-2">{errors.password.message}</p>
+                )}
               </div>
 
               {/* Confirm Password */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  {...register("password_confirmation", {
-                    required: "Confirmation is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
-                    validate: (value) =>
-                      value === watch("password") || "Passwords do not match",
-                  })}
-                  className="w-full px-5 py-2.5 rounded-full bg-linear-to-r from-green-100 to-yellow-100 border border-green-200"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Confirm Password</label>
+
+                <div className="relative w-full">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("password_confirmation", {
+                      required: "Confirmation is required",
+                      validate: (value) =>
+                        value === watch("password") || "Passwords do not match",
+                    })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base pr-16 sm:pr-20"
+                  />
+
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-green-700 text-xs sm:text-sm"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  >
+                    {showConfirmPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+
                 {errors.password_confirmation && (
-                  <p className="text-red-600 text-xs mt-1">
+                  <p className="text-red-600 text-xs mt-1 col-span-full sm:col-span-2 sm:col-start-2">
                     {errors.password_confirmation.message}
                   </p>
                 )}
-
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-full bg-green-600 text-white font-semibold shadow mt-8"
+                className="w-full py-2.5 sm:py-3 rounded-full bg-green-600 text-white font-semibold shadow mt-4 sm:mt-6 md:mt-8 flex items-center justify-center gap-2 disabled:opacity-60 text-sm sm:text-base"
               >
+                {isSubmitting && (
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
                 {isSubmitting ? "Registering..." : "Submit"}
               </button>
 
-              <p className="text-center text-green-700 text-sm mt-4">
+              <p className="text-center text-green-700 text-xs sm:text-sm mt-3 sm:mt-4">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="text-green-600 font-semibold">
+                <Link href="/auth/signin" className="text-green-600 font-semibold hover:underline">
                   Sign In
                 </Link>
               </p>
+
             </form>
           </div>
         </div>
       </section>
 
+      {/* Confirmation Modal */}
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md">
-
-            <h3 className="text-lg font-semibold text-green-800 mb-3">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl shadow-lg w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <h3 className="text-base sm:text-lg font-semibold text-green-800 mb-2 sm:mb-3">
               Confirm Registration
             </h3>
 
-            <p className="text-sm text-gray-700 mb-6">
+            <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">
               Are you sure you want to register with these details?
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <button
-                className="px-4 py-2 bg-gray-200 rounded-full text-sm"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 rounded-full text-xs sm:text-sm hover:bg-gray-300 transition-colors"
                 onClick={() => setConfirmOpen(false)}
               >
                 Cancel
               </button>
 
               <button
-                className="px-5 py-2 bg-green-600 text-white rounded-full text-sm"
+                disabled={isModalSubmitting}
                 onClick={confirmSubmit}
+                className="px-3 sm:px-5 py-1.5 sm:py-2 bg-green-600 text-white rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-60 hover:bg-green-700 transition-colors"
               >
-                Yes, Register
+                {isModalSubmitting && (
+                  <span className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
+                {isModalSubmitting ? "Processing..." : "Yes, Register"}
               </button>
             </div>
-
           </div>
         </div>
       )}
-
 
       <Footer />
     </>

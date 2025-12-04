@@ -9,11 +9,14 @@ import { Menu, X, User } from "lucide-react";
 
 const navItems = [
   { name: "Home", href: "/" },
+  { name: "About Us", href: "/pages/aboutUs" },
   { name: "Events", href: "/pages/event" },
   { name: "Training", href: "/pages/training" },
   { name: "Products", href: "/pages/products" },
   { name: "Our Team", href: "/pages/ourTeam" },
   { name: "Gallery", href: "/pages/gallery" },
+  { name: "File", href: "/pages/fileManager" },
+  { name: "Contact Us", href: "/pages/contactUs" },
 ];
 
 export default function Header() {
@@ -23,8 +26,8 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
-      <div className="max-w-[1400px] mx-auto flex items-center justify-between px-4 sm:px-8 lg:px-20 py-3 relative">
-        
+      <div className="max-w-[1700px] mx-auto flex items-center justify-between px-4 sm:px-8 lg:px-20 py-3 relative">
+
         {/* ===== Logo + Title (Medium) ===== */}
         <Link href="/" className="flex items-center gap-3 group">
           <Image
@@ -109,7 +112,7 @@ export default function Header() {
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className={cn(
-                  "font-medium text-foreground hover:text-primary transition-colors text-lg",
+                  "font-medium text-foreground hover:text-primary transition-colors text-sm",
                   pathname === item.href && "text-primary font-semibold"
                 )}
               >
@@ -118,22 +121,24 @@ export default function Header() {
             ))}
 
             {/* ===== Account Section Mobile ===== */}
-            <div className="border-t border-border pt-4 mt-2 flex flex-col gap-3">
+            <div className="border-t border-border pt-4 mt-2 flex gap-3">
               <Link
                 href="/auth/signin"
                 onClick={() => setMenuOpen(false)}
-                className="block text-center border border-primary text-primary py-2 rounded-md font-medium hover:bg-primary hover:text-primary-foreground"
+                className="flex-1 text-center border border-primary text-primary py-2 rounded-md font-medium hover:bg-primary hover:text-primary-foreground"
               >
                 Sign In
               </Link>
+
               <Link
                 href="/auth/signup"
                 onClick={() => setMenuOpen(false)}
-                className="block text-center bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-secondary"
+                className="flex-1 text-center bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-secondary"
               >
                 Sign Up
               </Link>
             </div>
+
           </nav>
         </div>
       )}

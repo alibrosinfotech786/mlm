@@ -17,6 +17,10 @@ class Training extends Model
         'venue',
         'duration',
         'description',
+        'course_fee',
+        'syllabus',
+        'level',
+        'image',
     ];
 
     protected function casts(): array
@@ -24,6 +28,7 @@ class Training extends Model
         return [
             'date' => 'date',
             'time' => 'datetime:H:i',
+            'syllabus' => 'array',
         ];
     }
 

@@ -25,7 +25,7 @@ export default function EventListing() {
 
   const router = useRouter();
 
-  // === Format date (API → "01 Dec 2025") ===
+  // === Format date ===
   function formatDate(apiDate: string) {
     if (!apiDate) return "-";
     const date = new Date(apiDate);
@@ -42,10 +42,10 @@ export default function EventListing() {
       setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.eventsList);
       setEvents(res.data.events || []);
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
+    } catch {
       toast.error("Failed to load events");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -53,11 +53,13 @@ export default function EventListing() {
     fetchEvents();
   }, []);
 
-  // === Handle Join -> Redirect Only ===
+  // Redirect after confirm
   function handleJoinRedirect() {
     setOpenModal(false);
     router.push("/admin/events/joinEvents");
   }
+
+  const today = new Date();
 
   return (
     <div className="container mx-auto px-6 md:px-12 lg:px-24 py-16">
@@ -80,6 +82,7 @@ export default function EventListing() {
               <th className="px-4 py-3 border-b border-border">City</th>
               <th className="px-4 py-3 border-b border-border">State</th>
               <th className="px-4 py-3 border-b border-border">Leader</th>
+              <th className="px-4 py-3 border-b border-border">View Details</th>
               <th className="px-4 py-3 border-b border-border text-center">
                 Action
               </th>
@@ -89,7 +92,10 @@ export default function EventListing() {
           <tbody className="divide-y divide-border bg-card text-foreground/90">
             {loading && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
+                <td
+                  colSpan={10}
+                  className="px-4 py-6 text-center text-muted-foreground"
+                >
                   Loading events...
                 </td>
               </tr>
@@ -97,42 +103,65 @@ export default function EventListing() {
 
             {!loading && events.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
+                <td
+                  colSpan={10}
+                  className="px-4 py-6 text-center text-muted-foreground"
+                >
                   No events available.
                 </td>
               </tr>
             )}
 
             {!loading &&
-              events.map((event: any, index: number) => (
-                <tr
-                  key={event.id}
-                  className="hover:bg-muted/30 transition-colors duration-150"
-                >
-                  <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3">{formatDate(event.date)}</td>
-                  <td className="px-4 py-3">{event.time}</td>
-                  <td className="px-4 py-3 font-medium">{event.venue}</td>
-                  <td className="px-4 py-3">{event.address}</td>
-                  <td className="px-4 py-3">{event.city}</td>
-                  <td className="px-4 py-3">{event.state}</td>
-                  <td className="px-4 py-3 text-primary font-semibold">
-                    {event.leader}
-                  </td>
+              events.map((event: any, index: number) => {
+                const eventDate = new Date(event.date);
+                const isFutureEvent = eventDate >= today;
 
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      className="text-green-700 hover:text-green-900 underline font-medium"
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setOpenModal(true);
-                      }}
-                    >
-                      Join Event
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                return (
+                  <tr
+                    key={event.id}
+                    className="hover:bg-muted/30 transition-colors duration-150"
+                  >
+                    <td className="px-4 py-3">{index + 1}</td>
+                    <td className="px-4 py-3">{formatDate(event.date)}</td>
+                    <td className="px-4 py-3">{event.time}</td>
+                    <td className="px-4 py-3 font-medium">{event.venue}</td>
+                    <td className="px-4 py-3">{event.address}</td>
+                    <td className="px-4 py-3">{event.city}</td>
+                    <td className="px-4 py-3">{event.state}</td>
+                    <td className="px-4 py-3 text-primary font-semibold">
+                      {event.leader}
+                    </td>
+                    <td className="px-4 py-3 text-primary font-semibold">
+                      <a
+                        href={`/pages/event/eventDetails?event_id=${event.id}`}
+                        className="text-blue-600 hover:text-blue-800 underline font-medium"
+                      >
+                        View Details
+                      </a>
+                    </td>
+
+                    {/* ACTION COLUMN */}
+                    <td className="px-4 py-3 text-center">
+                      {isFutureEvent ? (
+                        <button
+                          className="text-green-700 hover:text-green-900 underline font-medium"
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setOpenModal(true);
+                          }}
+                        >
+                          Join Event
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 italic">
+                          Event Completed
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>

@@ -17,6 +17,8 @@ class Event extends Model
         'city',
         'state',
         'leader',
+        'image1',
+        'image2',
     ];
 
     protected function casts(): array

@@ -11,14 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 
 const galleryImages = [
-  { id: 1, src: "/images/pp1.jpg", category: "Events", title: "CNT Conference 2025" },
-  { id: 2, src: "/images/pp2.jpg", category: "Training", title: "Leadership Training Session" },
-  { id: 3, src: "/images/pp3.jpg", category: "Products", title: "New Product Launch" },
-  { id: 4, src: "/images/pp4.jpg", category: "Events", title: "Wellness Meet" },
-  { id: 5, src: "/images/pp1.jpg", category: "Our Team", title: "Team Celebration" },
-  { id: 6, src: "/images/pp3.jpg", category: "Training", title: "Skill Development Workshop" },
-  { id: 7, src: "/images/pp4.jpg", category: "Products", title: "Ayurveda Fair Stall" },
-  { id: 8, src: "/images/pp2.jpg", category: "Our Team", title: "Success Party" },
+  { id: 1, src: "/gallery/pp1.jpeg", category: "Events", title: "CNT Conference 2025" },
+  { id: 2, src: "/gallery/pp2.jpeg", category: "Training", title: "Leadership Training Session" },
+  { id: 3, src: "/gallery/pp3.jpeg", category: "Products", title: "New Product Launch" },
+  { id: 4, src: "/gallery/pp4.jpeg", category: "Events", title: "Wellness Meet" },
+  { id: 5, src: "/gallery/pp1.jpeg", category: "Our Team", title: "Team Celebration" },
+  { id: 6, src: "/gallery/pp3.jpeg", category: "Training", title: "Skill Development Workshop" },
+  { id: 7, src: "/gallery/pp4.jpeg", category: "Products", title: "Ayurveda Fair Stall" },
+  { id: 8, src: "/gallery/pp2.jpeg", category: "Our Team", title: "Success Party" },
 ];
 
 const categories = ["All", "Events", "Training", "Products", "Our Team"];

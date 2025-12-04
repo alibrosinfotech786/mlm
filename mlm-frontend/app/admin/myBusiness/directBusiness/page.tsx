@@ -1,109 +1,183 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
-import DataTable from "@/components/common/DataTable";
+import DataTable, { Column } from "@/components/common/DataTable";
+import axiosInstance from "@/app/api/axiosInstance";
+import ProjectApiList from "@/app/api/ProjectApiList";
+import toast from "react-hot-toast";
+import ReferralDetailsModal from "./components/BonusDetailsModal";
 
-interface BusinessReport {
-  date: string;
-  username: string;
-  pv: number;
-  cbp: number;
+interface BonusUser {
+  user_id: string;
+  name: string;
+  phone: string;
+  joined_date: string;
+  // current_bv: string;
+  position: string;
+  bonus_received: string;
+  bonus_count: number;
+  last_bonus_date: string;
+  bonus_history: {
+    amount: string;
+    date: string;
+  }[];
 }
 
-export default function DirectBusinessReportPage() {
+export default function BonusReceivedPage() {
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
 
-  // ✅ Demo Data (Replace with API later)
-  const reportData: BusinessReport[] = [
-    { date: "2024-10-12", username: "Vishal Verma", pv: 120, cbp: 300 },
-    { date: "2024-10-13", username: "Aman Kumar", pv: 95, cbp: 250 },
-    { date: "2024-10-14", username: "Priya Sharma", pv: 150, cbp: 310 },
-    { date: "2024-10-15", username: "Rahul Mehta", pv: 80, cbp: 200 },
-    { date: "2024-10-16", username: "Sneha Gupta", pv: 130, cbp: 270 },
-    { date: "2024-10-17", username: "Mohit Singh", pv: 200, cbp: 350 },
-    { date: "2024-10-18", username: "Neha Patel", pv: 180, cbp: 300 },
-    { date: "2024-10-19", username: "Arjun Yadav", pv: 160, cbp: 280 },
-    { date: "2024-10-20", username: "Pooja Rani", pv: 190, cbp: 330 },
-    { date: "2024-10-21", username: "Ravi Kumar", pv: 210, cbp: 360 },
-    { date: "2024-10-22", username: "Rohan Das", pv: 140, cbp: 290 },
-    { date: "2024-10-23", username: "Anjali Singh", pv: 175, cbp: 320 },
-    { date: "2024-10-24", username: "Deepak Yadav", pv: 205, cbp: 355 },
+  const [data, setData] = useState<BonusUser[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [viewItem, setViewItem] = useState<BonusUser | null>(null);
+
+  const [totalBonus, setTotalBonus] = useState(0);
+
+  const user =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "{}")
+      : {};
+
+  const userId = user?.user_id;
+
+  const formatPrettyDate = (dateString: string) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // =================== FETCH API ===================
+  const fetchBonusData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      const res = await axiosInstance.get(
+        `${ProjectApiList.BONUS_RECEIVED}?user_id=${userId}&page=${page}&per_page=${entries}&search=${search}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res?.data?.success) {
+        setData(res.data.bonus_received || []);
+
+        const p = res.data.pagination;
+        setTotalPages(p?.last_page || 1);
+
+        setTotalBonus(res?.data?.total_bonus_received || 0);
+      } else {
+        toast.error("Failed to load bonus data");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBonusData();
+  }, [page, entries, search]);
+
+  // =================== TABLE COLUMNS ===================
+  const columns: Column<BonusUser>[] = [
+    {
+      key: "joined_date" as any,
+      label: "Joined",
+      render: (v, row) => formatPrettyDate(row.joined_date),
+    },
+    { key: "name" as any, label: "Name" },
+    {
+      key: "bonus_received" as any,
+      label: "Bonus Received",
+      render: (v, row) => (
+<span className="font-semibold text-green-700">{row.bonus_received} BV</span>
+      ),
+    },
+    {
+      key: "position" as any,
+      label: "Position",
+      render: (v, row) => <span className="capitalize">{row.position}</span>,
+    },
+    {
+      key: "actions" as any,
+      label: "Actions",
+      render: (v, row) => (
+        <button
+          className="text-blue-600 underline text-sm"
+          onClick={() => setViewItem(row)}
+        >
+          View Bonus History
+        </button>
+      ),
+    },
   ];
 
-  // ===== Filtered + Paginated Data =====
-  const filteredData = reportData.filter(
-    (item) =>
-      item.username?.toLowerCase().includes(search.toLowerCase()) ||
-      item.date?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredData.length / entries);
-  const startIndex = (page - 1) * entries;
-  const paginatedData = filteredData.slice(startIndex, startIndex + entries);
-
-  const handlePrevious = () => setPage((p) => Math.max(p - 1, 1));
-  const handleNext = () => setPage((p) => Math.min(p + 1, totalPages || 1));
-
-  // ====== Total PV/CBP Calculations ======
-  const totalPV = reportData.reduce((sum, item) => sum + item.pv, 0);
-  const totalCBP = reportData.reduce((sum, item) => sum + item.cbp, 0);
+  // =================== PAGINATION ===================
+  const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* ===== Page Header ===== */}
+
+          {/* ======= HEADER ROW ======= */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-green-800">
-                Direct Business Report
+                Direct Business
               </h1>
-              <p className="text-green-700 text-sm">
-                Track your direct business growth and PV/CBP statistics.
+              <p className="text-green-700 text-sm -mt-1">
+                Track bonuses received from referrals.
               </p>
+            </div>
+
+            <div className="bg-white border border-green-200 shadow-sm rounded-lg px-5 py-3 text-green-800 font-medium text-sm">
+              Total Bonus:
+              <span className="ml-2 text-green-700 font-bold">{totalBonus} BV</span>
             </div>
           </div>
 
-          {/* ===== Data Table ===== */}
+          {/* ======= DATA TABLE ======= */}
           <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
-              columns={[
-                { key: "date", label: "Date" },
-                { key: "username", label: "Username" },
-                { key: "pv", label: "PV" },
-                { key: "cbp", label: "CBP" },
-              ]}
-              data={paginatedData}
+              columns={columns}
+              data={data}
+              loading={loading}
               page={page}
               totalPages={totalPages}
               entries={entries}
               search={search}
-              onSearchChange={setSearch}
-              onEntriesChange={setEntries}
+              onSearchChange={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              onEntriesChange={(val) => {
+                setEntries(val);
+                setPage(1);
+              }}
               onPrevious={handlePrevious}
               onNext={handleNext}
-              emptyMessage="No data available in table"
+              emptyMessage="No bonus records found"
             />
           </div>
 
-          {/* ===== Footer Totals ===== */}
-          <div className="bg-white border border-green-100 shadow-sm rounded-lg p-4 flex flex-wrap justify-end gap-6 text-green-800 font-medium text-sm">
-            <p>
-              Total PV:{" "}
-              <span className="font-semibold text-green-700">{totalPV}</span>
-            </p>
-            <p>
-              Total CBP:{" "}
-              <span className="font-semibold text-green-700">{totalCBP}</span>
-            </p>
-          </div>
         </div>
       </section>
+
+      {/* MODAL */}
+      <ReferralDetailsModal item={viewItem} onClose={() => setViewItem(null)} />
     </>
   );
 }

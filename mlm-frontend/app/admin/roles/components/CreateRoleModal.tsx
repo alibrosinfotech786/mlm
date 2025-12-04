@@ -4,7 +4,7 @@ import { useState } from "react";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 
-export default function CreateRoleModal({ onClose, onCreated }:any) {
+export default function CreateRoleModal({ onClose, onCreated }: any) {
   const [roleName, setRoleName] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,8 +42,12 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     "Sponser Matching Income",
     "Repurchasing Income",
     "Grievance",
+    "ContactUS",
     "BV Summary",
+    "Add State",
+    "Add District",
     "All Wallet Request",
+    "File Manager",
   ];
 
   const [permissions, setPermissions] = useState(
@@ -56,14 +60,16 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
     }))
   );
 
-  const togglePermission = (i:any, key:any) => {
-    const updated:any = [...permissions];
+  const togglePermission = (i: any, key: any) => {
+    const updated: any = [...permissions];
     updated[i][key] = !updated[i][key];
     setPermissions(updated);
   };
 
   const toggleSelectAll = () => {
-    const allSelected = permissions.every((p) => p.create && p.read && p.update && p.delete);
+    const allSelected = permissions.every(
+      (p) => p.create && p.read && p.update && p.delete
+    );
 
     setPermissions(
       permissions.map((p) => ({
@@ -102,10 +108,10 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-3">
-      <div className="bg-white w-full max-w-3xl rounded-xl shadow-2xl p-6 border">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-2 md:px-3">
+      <div className="bg-white w-full max-w-lg md:max-w-3xl rounded-xl shadow-2xl p-4 md:p-6 border h-[90vh] overflow-y-auto">
 
-        <h2 className="text-2xl font-semibold mb-4">Create Role</h2>
+        <h2 className="text-xl md:text-2xl font-semibold mb-4">Create Role</h2>
 
         <input
           type="text"
@@ -120,8 +126,8 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
           <span>Select All</span>
         </div>
 
-        <div className="border rounded max-h-64 overflow-y-auto">
-          <table className="w-full text-sm">
+        <div className="border rounded max-h-52 md:max-h-64 overflow-y-auto overflow-x-auto">
+          <table className="w-full min-w-[500px] text-xs md:text-sm">
             <thead className="bg-gray-100 sticky top-0">
               <tr>
                 <th className="p-2">Module</th>
@@ -133,7 +139,7 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
             </thead>
 
             <tbody>
-              {permissions.map((perm:any, index) => (
+              {permissions.map((perm: any, index) => (
                 <tr key={index} className="border-b">
                   <td className="p-2">{perm.module}</td>
 
@@ -152,15 +158,15 @@ export default function CreateRoleModal({ onClose, onCreated }:any) {
           </table>
         </div>
 
-        <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onClose} className="border px-4 py-2 rounded">
+        <div className="flex flex-col md:flex-row justify-end gap-3 mt-5">
+          <button onClick={onClose} className="border px-4 py-2 rounded w-full md:w-auto">
             Cancel
           </button>
 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-green-700 text-white px-4 py-2 rounded"
+            className="bg-green-700 text-white px-4 py-2 rounded w-full md:w-auto"
           >
             {loading ? "Creating..." : "Create Role"}
           </button>
