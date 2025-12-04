@@ -41,7 +41,7 @@ export default function KycViewPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       {previewImage && (
         <div

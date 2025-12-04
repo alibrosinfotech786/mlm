@@ -55,7 +55,7 @@ const TreeView: React.FC<TreeViewProps> = ({
 
   return (
     <div className="flex justify-center">
-      <ul className="flex flex-col items-center">
+<ul className="flex flex-col items-center min-w-max">
         <li className="flex flex-col items-center relative">
 
           {/* Node */}
@@ -75,7 +75,7 @@ const TreeView: React.FC<TreeViewProps> = ({
               <div className="w-[2px] h-6 bg-green-700"></div>
 
               {/* CHILDREN WRAPPER */}
-              <div className="relative flex justify-center gap-14">
+<div className="relative flex justify-center gap-10 sm:gap-14 md:gap-20">
 
                 {/* HORIZONTAL LINE = controlled by LEVEL */}
                 {hasTwoChildren && (

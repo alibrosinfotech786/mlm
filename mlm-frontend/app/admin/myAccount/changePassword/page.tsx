@@ -187,7 +187,7 @@ export default function ChangePasswordPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-background py-12 px-6 lg:px-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">

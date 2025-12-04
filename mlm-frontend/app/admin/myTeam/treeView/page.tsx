@@ -112,7 +112,7 @@ export default function TreeViewPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-6 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -123,35 +123,52 @@ export default function TreeViewPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* Search */}
-            <div className="bg-white p-5 rounded-xl shadow-md">
-              <h2 className="text-lg font-bold mb-3 text-green-800">Search Member</h2>
+            <div className="bg-white p-4 sm:p-5 rounded-xl shadow-md">
+              <h2 className="text-base sm:text-lg font-bold mb-3 text-green-800">Search Member</h2>
 
-              <div className="flex gap-2">
-                <input
-                  value={searchId}
-                  onChange={(e) => setSearchId(e.target.value)}
-                  className="border px-3 py-2 rounded-lg w-full text-sm"
-                  placeholder="Enter User ID"
-                />
-                <button
-                  onClick={() => fetchTree(searchId)}
-                  className="bg-green-700 text-white px-4 rounded-lg"
-                >
-                  Search
-                </button>
-                <button
-                  onClick={() => {
-                    const u = JSON.parse(localStorage.getItem("user") || "{}");
-                    if (u?.user_id) {
-                      setSearchId(u.user_id);
-                      fetchTree(u.user_id);
-                    }
-                  }}
-                  className="bg-gray-500 text-white px-4 rounded-lg hover:bg-gray-600"
-                >
-                  Reset
-                </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Input field - full width on mobile */}
+                <div className="w-full">
+                  <input
+                    value={searchId}
+                    onChange={(e) => setSearchId(e.target.value)}
+                    className="border border-gray-300 px-3 py-2 sm:py-2.5 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Enter User ID"
+                  />
+                </div>
 
+                {/* Buttons container - stack on mobile, row on tablet+ */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                  {/* Search button */}
+                  <button
+                    onClick={() => fetchTree(searchId)}
+                    className="bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex-1 sm:flex-none"
+                  >
+                    Search
+                  </button>
+
+                  {/* Reset button */}
+                  <button
+                    onClick={() => {
+                      const u = JSON.parse(localStorage.getItem("user") || "{}");
+                      if (u?.user_id) {
+                        setSearchId(u.user_id);
+                        fetchTree(u.user_id);
+                      }
+                    }}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex-1 sm:flex-none"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Optional: Display current user ID on mobile for clarity */}
+              <div className="mt-3 sm:hidden text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">Current:</span>
+                  <span className="truncate">{searchId || "Not set"}</span>
+                </div>
               </div>
             </div>
 
@@ -175,11 +192,28 @@ export default function TreeViewPage() {
           </div>
 
           {/* Tree */}
-          <div className="bg-white rounded-xl shadow-md border p-2 h-[600px] overflow-auto">
+          <div
+            className="
+    bg-white rounded-xl shadow-md border 
+    p-2 h-[600px] 
+    overflow-x-auto overflow-y-auto 
+    scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-gray-200
+  "
+          >
             {loading ? (
               <p className="text-center py-10 text-green-700">Loading Tree...</p>
             ) : treeData ? (
-              <div className="scale-[0.60] mx-auto">
+              <div
+                className="
+    mx-auto 
+    transform origin-top
+    scale-[0.55] 
+    xs:scale-[0.60]
+    sm:scale-[0.70]
+    md:scale-[0.85]
+    lg:scale-100
+  "
+              >
                 <TreeView
                   data={treeData}
                   onNodeDoubleClick={(id) => {

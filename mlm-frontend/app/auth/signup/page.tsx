@@ -33,7 +33,6 @@ interface RegisterForm {
   password_confirmation: string;
 }
 
-
 export default function SignUpPage() {
   const {
     register,
@@ -45,16 +44,12 @@ export default function SignUpPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<RegisterForm | null>(null);
-
   const [serverError, setServerError] = useState("");
   const [sponsorError, setSponsorError] = useState("");
-
   const [states, setStates] = useState<StateType[]>([]);
   const [districts, setDistricts] = useState<DistrictType[]>([]);
-
   const [isModalSubmitting, setIsModalSubmitting] = useState(false);
 
   const sponsorId = watch("sponsor_id");
@@ -62,14 +57,15 @@ export default function SignUpPage() {
 
   /* ---------------------- READ REFERRAL FROM URL ---------------------- */
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const referral = urlParams.get("referral");
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const referral = urlParams.get("referral");
 
-    if (referral) {
-      setValue("sponsor_id", referral);
+      if (referral) {
+        setValue("sponsor_id", referral);
+      }
     }
   }, [setValue]);
-
 
   /* ---------------------- FETCH STATES ---------------------- */
   useEffect(() => {
@@ -164,12 +160,7 @@ export default function SignUpPage() {
       const apiError = error?.response?.data;
 
       if (apiError?.errors) {
-        // Convert Laravel-like error list into readable message
-        const fullMessage = Object.entries(apiError.errors)
-          .map(([field, messages]: any) => `${messages.join(", ")}`)
-          .join(" | ");
-
-setServerError(Object.values(apiError.errors).flat().join("\n"));
+        setServerError(Object.values(apiError.errors).flat().join("\n"));
       } else {
         setServerError(apiError?.message || "Registration failed! Try again.");
       }
@@ -183,35 +174,36 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
     <>
       <Header />
 
-      <section className="min-h-screen flex flex-col md:flex-row items-center justify-center px-6 lg:px-20">
+      <section className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 sm:py-12">
 
         {/* Left Panel */}
-        <div className="w-full md:w-1/2 flex flex-col items-center text-center mb-10">
+        <div className="w-full lg:w-1/2 flex flex-col items-center text-center mb-8 sm:mb-10 lg:mb-0">
           <Image
             src="/images/logo.png"
             alt="Tathastu Ayurveda Logo"
-            width={420}
-            height={420}
-            className="object-contain drop-shadow-md"
+            width={280}
+            height={280}
+            className="object-contain drop-shadow-md w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] md:w-[320px] md:h-[320px] lg:w-[350px] lg:h-[350px] xl:w-[420px] xl:h-[420px]"
+            priority
           />
-          <h2 className="text-3xl font-bold text-green-800 mt-2">TATHASTU AYURVEDA</h2>
-          <p className="text-green-700 text-sm mt-1">Healing Roots, Cultivating Prosperity 🌿</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-green-800 mt-2">TATHASTU AYURVEDA</h2>
+          <p className="text-green-700 text-xs sm:text-sm mt-1">Healing Roots, Cultivating Prosperity 🌿</p>
         </div>
 
         {/* Right Panel */}
-        <div className="w-full md:w-1/2 flex justify-center my-10">
-          <div className="relative w-full max-w-2xl rounded-2xl shadow-xl p-10 bg-white">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-green-700 font-semibold text-lg px-6 py-2 rounded-full shadow-md border border-green-200">
+        <div className="w-full lg:w-1/2 flex justify-center my-6 sm:my-8 lg:my-10">
+          <div className="relative w-full max-w-2xl rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 md:p-8 lg:p-10 bg-white">
+            <div className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 bg-white text-green-700 font-semibold text-sm sm:text-base md:text-lg px-4 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-md border border-green-200 whitespace-nowrap">
               User Registration
             </div>
 
             {serverError && (
-              <div className="mt-10 mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm text-center">
+              <div className="mt-8 sm:mt-10 mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-xs sm:text-sm text-center whitespace-pre-line">
                 {serverError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-10 space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 sm:mt-10 space-y-3 sm:space-y-4 md:space-y-5">
 
               {/* Basic Fields */}
               {[
@@ -219,55 +211,60 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                 { id: "email", label: "Email", type: "email" },
                 { id: "phone", label: "Phone Number", type: "text" },
               ].map((field) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                  <label className="font-semibold text-green-800">{field.label}</label>
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                  <label className="font-semibold text-green-800 text-sm sm:text-base">{field.label}</label>
 
-                  <input
-                    type={field.type}
-                    {...register(field.id as keyof RegisterForm, { required: true })}
-                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                  />
+                  <div className="w-full">
+                    <input
+                      type={field.type}
+                      {...register(field.id as keyof RegisterForm, { required: true })}
+                      className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                    />
 
-                  {errors[field.id as keyof RegisterForm] && (
-                    <p className="text-red-600 text-xs">This field is required</p>
-                  )}
+                    {errors[field.id as keyof RegisterForm] && (
+                      <p className="text-red-600 text-xs mt-1">This field is required</p>
+                    )}
+                  </div>
                 </div>
               ))}
 
               {/* State */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">State</label>
-                <select
-                  {...register("state_id", { required: true })}
-                  className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                >
-                  <option value="">Select State</option>
-                  {states.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-                {errors.state_id && <p className="text-red-600 text-xs">State is required</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">State</label>
+                <div className="w-full">
+                  <select
+                    {...register("state_id", { required: true })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                  >
+                    <option value="">Select State</option>
+                    {states.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  {errors.state_id && <p className="text-red-600 text-xs mt-1">State is required</p>}
+                </div>
               </div>
 
               {/* District */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">District</label>
-                <select
-                  {...register("district_id", { required: true })}
-                  className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-                >
-                  <option value="">Select District</option>
-                  {districts.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-                {errors.district_id && <p className="text-red-600 text-xs">District is required</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">District</label>
+                <div className="w-full">
+                  <select
+                    {...register("district_id", { required: true })}
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
+                  >
+                    <option value="">Select District</option>
+                    {districts.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  {errors.district_id && <p className="text-red-600 text-xs mt-1">District is required</p>}
+                </div>
               </div>
 
               {/* Sponsor ID */}
-              {/* Sponsor ID */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor ID</label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Sponsor ID</label>
 
                 <div className="w-full">
                   <input
@@ -280,7 +277,7 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                         );
                       },
                     })}
-                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
                   />
 
                   {/* Length validation */}
@@ -299,23 +296,22 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                 </div>
               </div>
 
-
               {/* Sponsor Name */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Sponsor Name</label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Sponsor Name</label>
                 <input
                   disabled
                   {...register("sponsor_name")}
-                  className="w-full px-5 py-2.5 rounded-full bg-gray-100 border border-green-200 text-gray-600"
+                  className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-gray-100 border border-green-200 text-gray-600 text-sm sm:text-base"
                 />
               </div>
 
               {/* Position */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Position</label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Position</label>
                 <select
                   {...register("position", { required: true })}
-                  className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                  className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base"
                 >
                   <option value="left">Left</option>
                   <option value="right">Right</option>
@@ -323,8 +319,8 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
               </div>
 
               {/* Password */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Password</label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Password</label>
 
                 <div className="relative w-full">
                   <input
@@ -333,13 +329,13 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                       required: "Password is required",
                       minLength: { value: 8, message: "Must be at least 8 characters" },
                     })}
-                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base pr-16 sm:pr-20"
                   />
 
                   {/* Toggle */}
                   <button
                     type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-700 text-sm"
+                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-green-700 text-xs sm:text-sm"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
                     {showPassword ? "Hide" : "Show"}
@@ -347,13 +343,13 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                 </div>
 
                 {errors.password && (
-                  <p className="text-red-600 text-xs">{errors.password.message}</p>
+                  <p className="text-red-600 text-xs mt-1 col-span-full sm:col-span-2 sm:col-start-2">{errors.password.message}</p>
                 )}
               </div>
 
               {/* Confirm Password */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-                <label className="font-semibold text-green-800">Confirm Password</label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] items-center gap-2 sm:gap-3 md:gap-4">
+                <label className="font-semibold text-green-800 text-sm sm:text-base">Confirm Password</label>
 
                 <div className="relative w-full">
                   <input
@@ -363,13 +359,13 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                       validate: (value) =>
                         value === watch("password") || "Passwords do not match",
                     })}
-                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                    className="w-full px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-full bg-green-100 border border-green-200 text-sm sm:text-base pr-16 sm:pr-20"
                   />
 
                   {/* Toggle */}
                   <button
                     type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-700 text-sm"
+                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-green-700 text-xs sm:text-sm"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                   >
                     {showConfirmPassword ? "Hide" : "Show"}
@@ -377,7 +373,7 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
                 </div>
 
                 {errors.password_confirmation && (
-                  <p className="text-red-600 text-xs">
+                  <p className="text-red-600 text-xs mt-1 col-span-full sm:col-span-2 sm:col-start-2">
                     {errors.password_confirmation.message}
                   </p>
                 )}
@@ -387,17 +383,17 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-full bg-green-600 text-white font-semibold shadow mt-8 flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full py-2.5 sm:py-3 rounded-full bg-green-600 text-white font-semibold shadow mt-4 sm:mt-6 md:mt-8 flex items-center justify-center gap-2 disabled:opacity-60 text-sm sm:text-base"
               >
                 {isSubmitting && (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 )}
                 {isSubmitting ? "Registering..." : "Submit"}
               </button>
 
-              <p className="text-center text-green-700 text-sm mt-4">
+              <p className="text-center text-green-700 text-xs sm:text-sm mt-3 sm:mt-4">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="text-green-600 font-semibold">
+                <Link href="/auth/signin" className="text-green-600 font-semibold hover:underline">
                   Sign In
                 </Link>
               </p>
@@ -409,19 +405,19 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
 
       {/* Confirmation Modal */}
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md">
-            <h3 className="text-lg font-semibold text-green-800 mb-3">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl shadow-lg w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <h3 className="text-base sm:text-lg font-semibold text-green-800 mb-2 sm:mb-3">
               Confirm Registration
             </h3>
 
-            <p className="text-sm text-gray-700 mb-6">
+            <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">
               Are you sure you want to register with these details?
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <button
-                className="px-4 py-2 bg-gray-200 rounded-full text-sm"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 rounded-full text-xs sm:text-sm hover:bg-gray-300 transition-colors"
                 onClick={() => setConfirmOpen(false)}
               >
                 Cancel
@@ -430,10 +426,10 @@ setServerError(Object.values(apiError.errors).flat().join("\n"));
               <button
                 disabled={isModalSubmitting}
                 onClick={confirmSubmit}
-                className="px-5 py-2 bg-green-600 text-white rounded-full text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                className="px-3 sm:px-5 py-1.5 sm:py-2 bg-green-600 text-white rounded-full text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-60 hover:bg-green-700 transition-colors"
               >
                 {isModalSubmitting && (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 )}
                 {isModalSubmitting ? "Processing..." : "Yes, Register"}
               </button>

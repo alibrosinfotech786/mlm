@@ -94,7 +94,7 @@ export default function WalletRequestPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       {/* 🔥 Fullscreen Overlay Loader (When API is sending) */}
       {apiLoading && (

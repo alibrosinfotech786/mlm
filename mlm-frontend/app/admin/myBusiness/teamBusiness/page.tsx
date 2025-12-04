@@ -131,7 +131,7 @@ export default function LevelTeamPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">

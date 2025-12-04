@@ -73,7 +73,7 @@ export default function IDCard() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-gray-300 flex items-center justify-center py-10 space-x-3">
 

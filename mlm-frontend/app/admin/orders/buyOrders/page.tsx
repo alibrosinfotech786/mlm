@@ -127,7 +127,7 @@ export default function BuyProductsPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-6 sm:px-10">
         <div className="max-w-7xl mx-auto">

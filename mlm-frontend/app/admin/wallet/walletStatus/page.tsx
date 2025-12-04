@@ -121,7 +121,7 @@ export default function WalletStatusPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       {/* 📌 Modal UI */}
       {selectedRow && (
