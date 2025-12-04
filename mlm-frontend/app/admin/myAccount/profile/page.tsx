@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AdminHeader from "@/components/admin/AdminHeader";
+import axiosInstance from "@/app/api/axiosInstance";
+import ProjectApiList from "@/app/api/ProjectApiList";
 import toast from "react-hot-toast";
 
 export default function ProfilePage() {
@@ -11,25 +13,46 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any | null>(null);
 
   /* ==================================================
-      LOAD USER FROM LOCALSTORAGE
+      LOAD USER FROM API USING LOCALSTORAGE USER_ID
   ================================================== */
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("user");
+    const loadUser = async () => {
+      try {
+        const stored = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
 
-      if (!stored) {
-        toast.error("User not found");
+        if (!stored) {
+          toast.error("User not found");
+          return;
+        }
+
+        const parsedUser = JSON.parse(stored);
+        const userId = parsedUser?.user_id;
+
+        if (!userId) {
+          toast.error("User ID missing");
+          return;
+        }
+
+        // CALL THE SAME API AS ID CARD
+        const res = await axiosInstance.get(
+          `${ProjectApiList.USER_SHOW}?user_id=${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (res.data.success) {
+          setUser(res.data.user);
+        }
+      } catch (error) {
+        toast.error("Failed to load profile");
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
-      const parsedUser = JSON.parse(stored);
-      setUser(parsedUser);
-    } catch (error) {
-      toast.error("Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
+    loadUser();
   }, []);
 
   if (loading) {
@@ -55,29 +78,23 @@ export default function ProfilePage() {
   }
 
   /* ==========================================
-      PARSE VALUES
+      PARSE VALUES FROM API RESPONSE
   ========================================== */
-
   const joinDate = user.created_at
     ? new Date(user.created_at).toLocaleDateString("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     : "-";
-
-  const sponsorName = user.sponsor_name || "N/A";
-  const sponsorId = user.sponsor_id || "N/A";
 
   const BASE = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 
-  // FIXED PROFILE IMAGE
+  // PROFILE IMAGE
   const profilePicture = user.profile_picture
     ? `${BASE}/${user.profile_picture}`.replace(/([^:]\/)\/+/g, "$1")
     : "/images/default-user.png";
 
-
-    // console.log(profilePicture,"profilePicture-------->")
   return (
     <>
       <AdminHeader />
@@ -112,6 +129,9 @@ export default function ProfilePage() {
                   <p className="text-green-100 text-sm tracking-wider mt-1">
                     Rank: <span className="uppercase">{user.rank}</span>
                   </p>
+                  <p className="text-green-100 text-sm tracking-wider mt-1">
+                    Package: <span className="uppercase">{user.package}</span>
+                  </p>
 
                   <p className="text-sm mt-2 text-green-50">
                     BV:{" "}
@@ -124,7 +144,6 @@ export default function ProfilePage() {
 
               {/* RIGHT BUTTONS */}
               <div className="flex gap-4">
-
                 <Link
                   href="/admin/myAccount/profile/editProfile"
                   className="px-6 py-2.5 bg-yellow-300 text-green-900 font-semibold rounded-full shadow hover:bg-yellow-400 transition"
@@ -145,7 +164,7 @@ export default function ProfilePage() {
           {/* ===== DETAILS GRID ===== */}
           <div className="grid lg:grid-cols-3 gap-8">
 
-            {/* LEFT SIDE CONTENT */}
+            {/* LEFT SIDE */}
             <div className="lg:col-span-2 space-y-8">
 
               <InfoCard title="Personal Information">
@@ -154,16 +173,39 @@ export default function ProfilePage() {
                 <InfoRow label="Phone Number" value={user.phone} />
                 <InfoRow label="Address" value={user.address || "N/A"} />
                 <InfoRow label="Nominee" value={user.nominee || "N/A"} />
-                <InfoRow label="Rank" value={user.rank || "N/A"} />
-                <InfoRow label="Package" value={user.package || "N/A"} />
-                <InfoRow label="BV" value={user.bv || "0"} />
+                <InfoRow label="Rank" value={user.rank} />
+                <InfoRow label="Package" value={user.package} />
+                <InfoRow label="BV" value={user.bv} />
               </InfoCard>
 
               <InfoCard title="Network & Sponsor">
-                <InfoRow label="Sponsor ID" value={sponsorId} />
-                <InfoRow label="Sponsor Name" value={sponsorName} />
+                <InfoRow label="Sponsor ID" value={user.sponsor_id || "N/A"} />
+                <InfoRow label="Sponsor Name" value={user.sponsor_name || "N/A"} />
                 <InfoRow label="Posting Side" value={user.position || "N/A"} />
               </InfoCard>
+
+              {/* REFERRAL LINK */}
+              <div className="mt-6 text-left">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Your Referral Link</h3>
+
+                <div className="flex items-center gap-2 bg-white border border-green-200 rounded-full px-3 py-2">
+                  <span className="text-green-700 text-xs truncate">
+                    {`https://tathastuayurveda.world/auth/signup?referral=${user.user_id}`}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `https://tathastuayurveda.world/auth/signup?referral=${user.user_id}`
+                      );
+                      toast.success("Referral link copied!");
+                    }}
+                    className="px-3 py-1 bg-green-600 rounded-full text-white text-xs hover:bg-green-700 transition cursor-pointer"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
 
             </div>
 
@@ -186,7 +228,7 @@ export default function ProfilePage() {
 
                 <p>
                   <span className="font-semibold text-green-800">Sponsor:</span>{" "}
-                  {sponsorName}
+                  {user.sponsor_name || "N/A"}
                 </p>
               </div>
 
@@ -208,7 +250,7 @@ export default function ProfilePage() {
 }
 
 /* ---------------------------------------------
-    REUSABLE CARD COMPONENTS
+    REUSABLE COMPONENTS
 --------------------------------------------- */
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (

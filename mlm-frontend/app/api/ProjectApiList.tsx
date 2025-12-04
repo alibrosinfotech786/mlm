@@ -59,7 +59,7 @@ const ProjectApiList = {
   
   
   // BV-History
-  MLM_HIERARCHY: `${BASE_URL}/users/mlm-hierarchy`,
+  MLM_HIERARCHY: `${BASE_URL}/users/mlm-hierarchy-4-levels`,
   
   // Teams
   MLM_HIERARCHY_LIST: `${BASE_URL}/users/mlm-hierarchy-list`,
@@ -111,6 +111,9 @@ const ProjectApiList = {
 
     // Dashboard
     adminDashboard: `${BASE_URL}/admin/dashboard`,
+    COMPREHENSIVE_DASHBOARD: `${BASE_URL}/user/comprehensive-dashboard`,
+    MONTHLY_GROWTH: `${BASE_URL}/user/monthly-growth`,
+    BONUS_BREAKDOWN: `${BASE_URL}/user/bonus-breakdown`,
 
 };
 

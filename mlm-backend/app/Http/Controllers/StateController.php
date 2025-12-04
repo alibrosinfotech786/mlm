@@ -9,7 +9,7 @@ class StateController extends Controller
 {
     public function index(Request $request)
     {
-        $query = State::with('districts')->where('status', true);
+        $query = State::where('status', true);
         
         if ($request->has('search')) {
             $search = $request->input('search');
@@ -19,8 +19,7 @@ class StateController extends Controller
             });
         }
         
-        $perPage = $request->input('per_page', 10);
-        $states = $query->paginate($perPage);
+        $states = $query->get();
         
         return response()->json(['success' => true, 'data' => $states]);
     }

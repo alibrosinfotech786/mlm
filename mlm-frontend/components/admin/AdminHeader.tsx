@@ -79,7 +79,7 @@ export default function AdminHeader() {
             {/* Cart Button */}
             <Link href="/admin/cart">
               <button
-                className="relative flex items-center gap-2 px-3 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 transition"
+                className="relative flex items-center gap-2 px-3 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 transition cursor-pointer"
                 aria-label="Cart"
               >
                 <ShoppingCart size={22} />
@@ -99,7 +99,7 @@ export default function AdminHeader() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-green-200 bg-green-50 text-green-800 transition"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-green-200 bg-green-50 text-green-800 transition cursor-pointer"
                 aria-label="Profile"
               >
                 <UserCircle2 size={22} />

@@ -5,12 +5,12 @@ import Image from "next/image";
 
 export default function Slider() {
     const items = [
-        { image: "/partners/1.jpeg", title: "Business & Entrepreneurship" },
-        { image: "/partners/2.jpeg", title: "Tathastu Leadership Academy(TLA)" },
-        { image: "/partners/3.jpeg", title: "Ethical Direct Selling" },
-        { image: "/partners/4.jpeg", title: "Customer Support" },
-        { image: "/partners/5.jpeg", title: "Community Building" },
-        { image: "/partners/6.jpeg", title: "Registered Education & Training" },
+        { image: "/partners/1.png", title: "Business & Entrepreneurship" },
+        { image: "/partners/2.png", title: "Tathastu Leadership Academy(TLA)" },
+        { image: "/partners/3.png", title: "Ethical Direct Selling" },
+        { image: "/partners/4.png", title: "Customer Support" },
+        { image: "/partners/5.png", title: "Community Building" },
+        { image: "/partners/6.png", title: "Registered Education & Training" },
     ];
 
     const scrollingItems = [...items, ...items];
@@ -40,7 +40,7 @@ export default function Slider() {
                                 className="flex flex-col items-center text-center flex-shrink-0 w-[140px] md:w-[180px]"
                             >
                                 {/* IMAGE */}
-                                <div className="relative w-[80px] h-[60px] md:w-[110px] md:h-[80px] mb-3">
+                                <div className="relative w-[60px] h-[45px] md:w-[85px] md:h-[65px] mb-3">
                                     <Image
                                         src={item.image}
                                         alt={`Slider item ${i + 1}`}
@@ -48,6 +48,7 @@ export default function Slider() {
                                         className="object-contain"
                                     />
                                 </div>
+
 
                                 {/* TEXT */}
                                 <h4 className="text-sm md:text-base font-semibold text-green-800">

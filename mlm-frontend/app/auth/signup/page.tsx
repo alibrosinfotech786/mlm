@@ -60,6 +60,17 @@ export default function SignUpPage() {
   const sponsorId = watch("sponsor_id");
   const stateId = watch("state_id");
 
+  /* ---------------------- READ REFERRAL FROM URL ---------------------- */
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const referral = urlParams.get("referral");
+
+    if (referral) {
+      setValue("sponsor_id", referral);
+    }
+  }, [setValue]);
+
+
   /* ---------------------- FETCH STATES ---------------------- */
   useEffect(() => {
     async function loadStates() {
@@ -150,9 +161,18 @@ export default function SignUpPage() {
         window.location.href = "/auth/signin";
       }
     } catch (error: any) {
-      setServerError(
-        error?.response?.data?.message || "Registration failed! Try again."
-      );
+      const apiError = error?.response?.data;
+
+      if (apiError?.errors) {
+        // Convert Laravel-like error list into readable message
+        const fullMessage = Object.entries(apiError.errors)
+          .map(([field, messages]: any) => `${messages.join(", ")}`)
+          .join(" | ");
+
+setServerError(Object.values(apiError.errors).flat().join("\n"));
+      } else {
+        setServerError(apiError?.message || "Registration failed! Try again.");
+      }
     }
 
     setIsModalSubmitting(false);
@@ -246,38 +266,38 @@ export default function SignUpPage() {
 
               {/* Sponsor ID */}
               {/* Sponsor ID */}
-<div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
-  <label className="font-semibold text-green-800">Sponsor ID</label>
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+                <label className="font-semibold text-green-800">Sponsor ID</label>
 
-  <div className="w-full">
-    <input
-      type="text"
-      {...register("sponsor_id", {
-        validate: (value) => {
-          if (!value) return true; // ⭐ OPTIONAL
-          return (
-            value.length === 12 || "Sponsor ID must be exactly 12 characters"
-          );
-        },
-      })}
-      className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
-    />
+                <div className="w-full">
+                  <input
+                    type="text"
+                    {...register("sponsor_id", {
+                      validate: (value) => {
+                        if (!value) return true; // ⭐ OPTIONAL
+                        return (
+                          value.length === 12 || "Sponsor ID must be exactly 12 characters"
+                        );
+                      },
+                    })}
+                    className="w-full px-5 py-2.5 rounded-full bg-green-100 border border-green-200"
+                  />
 
-    {/* Length validation */}
-    {watch("sponsor_id") &&
-      watch("sponsor_id").length > 0 &&
-      watch("sponsor_id").length !== 12 && (
-        <p className="text-red-600 text-xs mt-1">
-          Sponsor ID must be exactly 12 characters
-        </p>
-      )}
+                  {/* Length validation */}
+                  {watch("sponsor_id") &&
+                    watch("sponsor_id").length > 0 &&
+                    watch("sponsor_id").length !== 12 && (
+                      <p className="text-red-600 text-xs mt-1">
+                        Sponsor ID must be exactly 12 characters
+                      </p>
+                    )}
 
-    {/* Server-based validation */}
-    {sponsorError && (
-      <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
-    )}
-  </div>
-</div>
+                  {/* Server-based validation */}
+                  {sponsorError && (
+                    <p className="text-red-600 text-xs mt-1">{sponsorError}</p>
+                  )}
+                </div>
+              </div>
 
 
               {/* Sponsor Name */}

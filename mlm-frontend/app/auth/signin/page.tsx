@@ -10,7 +10,7 @@ import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 
 interface LoginForm {
-  email: string;
+  user_id: string;
   password: string;
 }
 
@@ -39,7 +39,7 @@ export default function SignInPage() {
 
     } catch (error: any) {
       setServerError(
-        error?.response?.data?.message || "Invalid email or password!"
+        error?.response?.data?.message || "Invalid user_id or password!"
       );
     }
   };
@@ -106,15 +106,15 @@ export default function SignInPage() {
                   User ID
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   placeholder="Enter your User ID"
-                  {...register("email", { required: "Email is required" })}
+                  {...register("user_id", { required: "Email is required" })}
                   className="w-full px-4 py-2 rounded-full bg-linear-to-r 
                     from-green-100 to-yellow-100 border border-green-200 
                     text-green-800 focus:ring-2 focus:ring-green-500 outline-none"
                 />
-                {errors.email && (
-                  <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
+                {errors.user_id && (
+                  <p className="text-red-600 text-xs mt-1">{errors.user_id.message}</p>
                 )}
               </div>
 

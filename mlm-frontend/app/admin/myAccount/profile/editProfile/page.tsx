@@ -44,7 +44,7 @@ export default function EditProfilePage() {
             name: u.name || "",
             email: u.email || "",
             phone: u.phone || "",
-            address: u.address || "",
+            address: u.address || " ",
           });
 
           // profile picture
@@ -87,13 +87,55 @@ export default function EditProfilePage() {
     setPreviewImage(URL.createObjectURL(file)); // show preview instantly
   };
 
+  // ==========================================================
+  // VALIDATION
+  // ==========================================================
+  const validateForm = () => {
+    if (!user.name.trim()) {
+      toast.error("Name is required");
+      return false;
+    }
+
+    if (!user.email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(user.email)) {
+      toast.error("Enter a valid email address");
+      return false;
+    }
+
+    if (!user.phone.trim()) {
+      toast.error("Phone number is required");
+      return false;
+    }
+
+    // if (!/^[0-9]{10}$/.test(user.phone)) {
+    //   toast.error("Phone number must be 10 digits");
+    //   return false;
+    // }
+
+    if (!user.address.trim()) {
+      toast.error("Address is required");
+      return false;
+    }
+
+    return true;
+  };
+
+
   /* ==========================================================
       SUBMIT FORM
   ========================================================== */
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setSaving(true);
 
+    // Run Validation
+    if (!validateForm()) return;
+
+    setSaving(true);
     try {
       const token = localStorage.getItem("token");
 
@@ -102,7 +144,8 @@ export default function EditProfilePage() {
       fd.append("name", user.name);
       fd.append("email", user.email);
       fd.append("phone", user.phone);
-      fd.append("address", user.address);
+      fd.append("address", String(user.address || ""));
+
 
       if (profileImageFile) {
         fd.append("profile_picture", profileImageFile);
@@ -170,27 +213,27 @@ export default function EditProfilePage() {
               </div>
 
               {/* Custom File Upload Button */}
-<label
-  htmlFor="profile_picture"
-  className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition mt-3"
->
-  Choose File
-</label>
+              <label
+                htmlFor="profile_picture"
+                className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition mt-3"
+              >
+                Choose File
+              </label>
 
-<input
-  id="profile_picture"
-  type="file"
-  accept="image/*"
-  onChange={handleImageChange}
-  className="hidden"
-/>
+              <input
+                id="profile_picture"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
 
-{/* File Name Display */}
-{profileImageFile && (
-  <p className="text-xs text-gray-600 mt-2">
-    Selected: <span className="font-medium">{profileImageFile.name}</span>
-  </p>
-)}
+              {/* File Name Display */}
+              {profileImageFile && (
+                <p className="text-xs text-gray-600 mt-2">
+                  Selected: <span className="font-medium">{profileImageFile.name}</span>
+                </p>
+              )}
 
             </div>
 
@@ -248,7 +291,7 @@ function Input({
       <input
         type={type}
         name={name}
-        value={value}
+        value={value ?? " "}
         onChange={onChange}
         className="w-full mt-1 px-3 py-2 border rounded bg-white"
       />

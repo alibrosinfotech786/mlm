@@ -246,14 +246,15 @@ export default function AdminDashboard() {
                         <>
                             <StatCard title="Total Users" value={overview?.total_users ?? "..."} />
                             <StatCard title="Active Users" value={overview?.active_users ?? "..."} />
-                            <StatCard title="Today's Joins" value={overview?.todays_joins ?? "..."} />
                             <StatCard title="Total Orders" value={overview?.total_orders ?? "..."} />
-
-                            <StatCard
+                              <StatCard
                                 title="Total Sales"
                                 value={overview?.total_sales ?? 0}
                                 suffix=" ₹"
                             />
+
+                            <StatCard title="Today's Joins" value={overview?.todays_joins ?? "..."} />
+                          
                             <StatCard
                                 title="New Registrations (This Week)"
                                 value={overview?.new_registrations_this_week ?? 0}

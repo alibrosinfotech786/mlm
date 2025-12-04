@@ -63,7 +63,7 @@ export default function BvSummary() {
 
       // Set latest BV
       if (result.length > 0) {
-        setCurrentBV(parseFloat(result[0].new_bv));
+        setCurrentBV(res?.data?.total_bv);
       }
     } catch (err) {
       console.log("BV History Fetch Error:", err);
@@ -71,6 +71,7 @@ export default function BvSummary() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchBvHistory();

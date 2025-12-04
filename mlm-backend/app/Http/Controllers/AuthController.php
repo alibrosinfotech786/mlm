@@ -27,9 +27,9 @@ class AuthController extends Controller
             $validationRules = [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'phone' => 'required|string|max:15',
-                'state_id' => 'required|exists:states,id',
-                'district_id' => 'required|exists:districts,id',
+                'phone' => 'required|string|max:15|unique:users',
+                'state_id' => 'required|integer',
+                'district_id' => 'required|integer',
                 'password' => 'required|string|min:8|confirmed',
                 'sponsor_id' => 'nullable|exists:users,user_id',
                 'sponsor_name' => 'nullable|string|max:255',
@@ -198,11 +198,13 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email',
+                'user_id' => 'required|string',
                 'password' => 'required',
             ]);
 
-            if (!Auth::attempt($request->only('email', 'password'))) {
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'success' => false,
                     'error_type' => 'AUTHENTICATION_ERROR',
@@ -210,7 +212,6 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $user = User::where('email', $request->email)->first();
             $token = $user->createToken('auth_token')->plainTextToken;
             
             $role = Role::where('name', $user->role)->first();

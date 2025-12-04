@@ -56,7 +56,7 @@ export default function StatePage() {
         )}`
       );
 
-      const payload = res.data?.data;
+      const payload = res.data;
 
       // Laravel pagination structure
       const list = payload?.data || [];
