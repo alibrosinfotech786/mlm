@@ -17,6 +17,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UploadController;
 
 // test
 Route::get('/test', function () {
@@ -51,6 +52,11 @@ Route::get('/states', [StateController::class, 'index']);
 Route::get('/districts', [DistrictController::class, 'index']);
 Route::get('/districts/by-state', [DistrictController::class, 'getByState']);
 
+// Upload routes (public)
+Route::post('/uploads', [UploadController::class, 'store']);
+Route::get('/uploads', [UploadController::class, 'index']);
+Route::delete('/uploads', [UploadController::class, 'destroy']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
@@ -67,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/delete', [UserController::class, 'destroy']);
     Route::get('/users/binary-tree', [UserController::class, 'getBinaryTree']);
     Route::get('/users/mlm-hierarchy', [UserController::class, 'getMlmHierarchy']);
+    Route::get('/users/mlm-hierarchy-4-levels', [UserController::class, 'getMlmHierarchy4Levels']);
     Route::get('/users/mlm-hierarchy-list', [UserController::class, 'getMlmHierarchyList']);
     Route::get('/users/sponsored-users', [UserController::class, 'getSponsoredUsers']);
     Route::get('/users/level-bonus', [UserController::class, 'calculateLevelBonus']);
@@ -101,45 +108,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events/delete', [EventController::class, 'destroy']);
     Route::post('/events/join', [EventController::class, 'joinEvent']);
     Route::post('/events/leave', [EventController::class, 'leaveEvent']);
-    
+
     // Training routes
     Route::post('/trainings/store', [TrainingController::class, 'store']);
-    
+
     Route::post('/trainings/update', [TrainingController::class, 'update']);
     Route::post('/trainings/delete', [TrainingController::class, 'destroy']);
     Route::post('/trainings/join', [TrainingController::class, 'joinTraining']);
     Route::post('/trainings/leave', [TrainingController::class, 'leaveTraining']);
-    
+
     // Product routes
     Route::post('/products/store', [ProductController::class, 'store']);
     Route::post('/products/update', [ProductController::class, 'update']);
     Route::post('/products/delete', [ProductController::class, 'destroy']);
-    
+
     // Order routes
     Route::get('/orders', action: [OrderController::class, 'index']);
     Route::post('/orders/store', [OrderController::class, 'store']);
     Route::get('/orders/show', [OrderController::class, 'show']);
     Route::post('/orders/status', [OrderController::class, 'updateStatus']);
     Route::post('/orders/refund', [OrderController::class, 'refund']);
-    
+
     // Role routes
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles/store', [RoleController::class, 'store']);
     Route::get('/roles/show', [RoleController::class, 'show']);
     Route::post('/roles/update', [RoleController::class, 'update']);
     Route::post('/roles/delete', [RoleController::class, 'destroy']);
-    
+
     // BV History routes
     Route::get('/bv-history', [BvHistoryController::class, 'index']);
     Route::get('/bv-history/show', [BvHistoryController::class, 'show']);
-    
+    Route::get('/bv-history/credited', [BvHistoryController::class, 'showCredited']);
+
     // Wallet Transaction routes
     Route::get('/wallet-transactions', [WalletTransactionController::class, 'index']);
     Route::post('/wallet-transactions/store', [WalletTransactionController::class, 'store']);
     Route::post('/wallet-transactions/approve', [WalletTransactionController::class, 'approve']);
     Route::get('/wallet-history', [WalletTransactionController::class, 'walletHistory']);
     Route::post('/wallet-debit', [WalletTransactionController::class, 'debitWallet']);
-    
+
     // Grievance routes
     Route::get('/grievances', [GrievanceController::class, 'index']);
     Route::post('/grievances/store', [GrievanceController::class, 'store']);
@@ -147,10 +155,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/grievances/update', [GrievanceController::class, 'update']);
     Route::post('/grievances/status', [GrievanceController::class, 'updateStatus']);
     Route::post('/grievances/delete', [GrievanceController::class, 'destroy']);
-    
+
     // Contact routes (admin only)
     Route::get('/contacts', [ContactController::class, 'index']);
-    
+
     // Dashboard routes
     Route::get('/admin/dashboard', [DashboardController::class, 'getAdminDashboardData']);
     Route::get('/admin/charts/monthly-sales', [DashboardController::class, 'getMonthlySalesOverview']);
@@ -159,14 +167,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/charts/orders-sales-trend', [DashboardController::class, 'getOrdersSalesTrend']);
     Route::get('/admin/recent-joins', [DashboardController::class, 'getRecentJoins']);
     Route::get('/admin/recent-orders', [DashboardController::class, 'getRecentOrders']);
-    Route::get('/user/dashboard', [DashboardController::class, 'getUserDashboardData']);
-    
+    Route::get('/user/comprehensive-dashboard', [DashboardController::class, 'getComprehensiveUserDashboard']);
+    Route::get('/user/monthly-growth', [DashboardController::class, 'getUserMonthlyGrowth']);
+    Route::get('/user/bonus-breakdown', [DashboardController::class, 'getUserBonusBreakdown']);
+
     // State routes
     Route::post('/states/store', [StateController::class, 'store']);
     Route::get('/states/show', [StateController::class, 'show']);
     Route::post('/states/update', [StateController::class, 'update']);
     Route::post('/states/delete', [StateController::class, 'destroy']);
-    
+
     // District routes
     Route::post('/districts/store', [DistrictController::class, 'store']);
     Route::get('/districts/show', [DistrictController::class, 'show']);

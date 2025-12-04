@@ -260,6 +260,48 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function getMlmHierarchy4Levels(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'nullable|string']);
+            
+            if ($request->user_id) {
+                $rootUser = User::where('user_id', $request->user_id)->first();
+            } else {
+                $rootUser = User::whereNull('root_id')->first();
+            }
+            
+            if (!$rootUser) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'Root user not found'
+                ], 404);
+            }
+            
+            $hierarchy = $this->buildMlmHierarchy($rootUser, 5, 0);
+            
+            return response()->json([
+                'success' => true,
+                'mlm_hierarchy' => $hierarchy
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'MLM_HIERARCHY_ERROR',
+                'message' => 'Failed to fetch MLM hierarchy',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     
     private function buildMlmHierarchy($user, $levels, $currentLevel)
     {

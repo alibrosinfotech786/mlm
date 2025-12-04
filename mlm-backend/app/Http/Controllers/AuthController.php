@@ -7,8 +7,7 @@ use App\Models\Role;
 use App\Mail\WelcomeEmail;
 use App\Mail\WelcomeLetterEmail;
 use App\Mail\IdCardEmail;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -27,9 +26,9 @@ class AuthController extends Controller
             $validationRules = [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'phone' => 'required|string|max:15',
-                'state_id' => 'required|exists:states,id',
-                'district_id' => 'required|exists:districts,id',
+                'phone' => 'required|string|max:15|unique:users',
+                'state_id' => 'required|integer',
+                'district_id' => 'required|integer',
                 'password' => 'required|string|min:8|confirmed',
                 'sponsor_id' => 'nullable|exists:users,user_id',
                 'sponsor_name' => 'nullable|string|max:255',
@@ -198,11 +197,13 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email',
+                'user_id' => 'required|string',
                 'password' => 'required',
             ]);
 
-            if (!Auth::attempt($request->only('email', 'password'))) {
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'success' => false,
                     'error_type' => 'AUTHENTICATION_ERROR',
@@ -210,7 +211,6 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $user = User::where('email', $request->email)->first();
             $token = $user->createToken('auth_token')->plainTextToken;
             
             $role = Role::where('name', $user->role)->first();
@@ -313,18 +313,15 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
-            // Render welcome letter HTML into PDF using Dompdf
-            $html = view('emails.welcome-letter', ['user' => $user])->render();
-
-            $options = new Options();
-            $options->set('isRemoteEnabled', true);
-
-            $dompdf = new Dompdf($options);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            $pdfData = $dompdf->output();
+            // Generate PDF using PdfService
+            $pdfService = new PdfService();
+            $pdfData = $pdfService->generateFromView('emails.welcome-letter', [
+                'user' => $user
+            ], [
+                'isRemoteEnabled' => true,
+                'paper' => 'A4',
+                'orientation' => 'portrait'
+            ]);
 
             // Send welcome letter email with PDF attachment
             Mail::to($user->email)->send(new WelcomeLetterEmail($user, $pdfData));
@@ -360,21 +357,16 @@ class AuthController extends Controller
                 }
             }
 
-            // Render ID card view into PDF using Dompdf directly
-            $html = view('emails.id-card-attachment', [
+            // Generate PDF using PdfService
+            $pdfService = new PdfService();
+            $pdfData = $pdfService->generateFromView('emails.id-card-attachment', [
                 'user' => $user,
                 'profilePictureBase64' => $profilePictureBase64
-            ])->render();
-
-            $options = new Options();
-            $options->set('isRemoteEnabled', true);
-
-            $dompdf = new Dompdf($options);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            $pdfData = $dompdf->output();
+            ], [
+                'isRemoteEnabled' => true,
+                'paper' => 'A4',
+                'orientation' => 'portrait'
+            ]);
 
             Mail::to($user->email)->send(new IdCardEmail($user, $pdfData));
 

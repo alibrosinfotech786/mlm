@@ -99,8 +99,7 @@ class DistrictController extends Controller
             });
         }
         
-        $perPage = $request->input('per_page', 10);
-        $districts = $query->paginate($perPage);
+        $districts = $query->get();
         
         return response()->json(['success' => true, 'data' => $districts]);
     }

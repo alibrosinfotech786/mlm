@@ -68,10 +68,6 @@ return [
         'sendgrid' => [
             'transport' => 'sendgrid',
             'api_key' => env('SENDGRID_API_KEY'),
-            'from' => [
-                'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-                'name' => env('MAIL_FROM_NAME', 'Example'),
-            ],
         ],
 
         'sendmail' => [

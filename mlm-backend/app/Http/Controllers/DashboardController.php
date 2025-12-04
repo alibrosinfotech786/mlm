@@ -11,6 +11,26 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    private function getAllDescendants($user)
+    {
+        $descendants = collect();
+        
+        if (!$user) {
+            return $descendants;
+        }
+        
+        // Get direct children
+        $directChildren = User::where('root_id', $user->user_id)->get();
+        
+        foreach ($directChildren as $child) {
+            $descendants->push($child);
+            // Recursively get all descendants of this child
+            $descendants = $descendants->merge($this->getAllDescendants($child));
+        }
+        
+        return $descendants;
+    }
+
     public function getAdminDashboardData()
     {
         try {
@@ -250,71 +270,281 @@ class DashboardController extends Controller
         }
     }
 
-    public function getUserDashboardData(Request $request)
+    public function getComprehensiveUserDashboard(Request $request)
     {
         try {
-            $userId = $request->query('user_id');
+            $request->validate(['user_id' => 'nullable|exists:users,user_id']);
             
-            if ($userId) {
-                $user = User::where('user_id', $userId)->first();
-                if (!$user) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'User not found'
-                    ], 404);
-                }
-            } else {
-                $user = $request->user();
+            $userId = $request->user_id ?? $request->user()->user_id;
+            $user = User::where('user_id', $userId)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
             }
-            
-            // Get team BV data
-            $leftTeamBV = User::where('root_id', $user->user_id)
-                ->where('position', 'left')
-                ->sum('bv');
-            
-            $rightTeamBV = User::where('root_id', $user->user_id)
-                ->where('position', 'right')
-                ->sum('bv');
-            
-            $allTeamBV = User::where('sponsor_id', $user->user_id)->sum('bv');
-            
-            // Calculate referral bonus BV (10% from referrals with BV >= 1000)
-            $referralBonusBV = User::where('sponsor_id', $user->user_id)
-                ->where('bv', '>=', 1000)
-                ->sum(DB::raw('bv * 0.10')) ?? 0;
-            $performanceBonusBV = $user->bvHistories()->where('type', 'performance')->sum('bv_change') ?? 0;
-            $sponsorRoyaltyBV = $user->bvHistories()->where('type', 'sponsor_royalty')->sum('bv_change') ?? 0;
-            $rankBonusBV = $user->bvHistories()->where('type', 'rank')->sum('bv_change') ?? 0;
-            $repurchaseIncomeBV = $user->bvHistories()->where('type', 'repurchase')->sum('bv_change') ?? 0;
-            $fastTrackBonusBV = $user->bvHistories()->where('type', 'fast_track')->sum('bv_change') ?? 0;
-            $starAchieverPoolBV = $user->bvHistories()->where('type', 'star_achiever')->sum('bv_change') ?? 0;
-            $loyaltyBonusBV = $user->bvHistories()->where('type', 'loyalty')->sum('bv_change') ?? 0;
-            $directIncomeBV = $user->bvHistories()->where('type', 'direct')->sum('bv_change') ?? 0;
 
+            // 1. Personal Sales & Orders
+            $personalOrders = Order::where('user_id', $user->id)->get();
+            $totalPersonalSales = $personalOrders->sum('total_mrp');
+            $totalPersonalBV = $personalOrders->sum('total_bv');
+            $completedOrders = $personalOrders->whereIn('status', ['completed', 'delivered'])->count();
+            
+            // 2. Direct Referral Bonus (10% of qualified referrals' BV)
+            $directReferrals = User::where('sponsor_id', $userId)->get();
+            $qualifiedReferrals = $directReferrals->where('bv', '>=', 1000);
+            $referralBonusReceived = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('reason', 'referral_bonus')
+                ->sum('bv_change');
+            
+            // 3. Team Performance Bonus (Level bonuses)
+            $levelBonuses = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('reason', 'like', 'team_performance_bonus_level_%')
+                ->get()
+                ->groupBy('reason')
+                ->map(function($group) {
+                    return $group->sum('bv_change');
+                });
+            
+            $totalLevelBonus = $levelBonuses->sum();
+            
+            // 4. Binary Team BV Analysis
+            $leftTeam = $user->leftChild ? $this->getAllDescendants($user->leftChild) : collect();
+            $rightTeam = $user->rightChild ? $this->getAllDescendants($user->rightChild) : collect();
+            
+            if ($user->leftChild) $leftTeam->prepend($user->leftChild);
+            if ($user->rightChild) $rightTeam->prepend($user->rightChild);
+            
+            $leftTeamBV = $leftTeam->sum('bv');
+            $rightTeamBV = $rightTeam->sum('bv');
+            $matchingBV = min($leftTeamBV, $rightTeamBV);
+            
+            // 5. All BV Income Sources
+            $allBVIncome = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('type', 'credit')
+                ->get()
+                ->groupBy('reason')
+                ->map(function($group, $reason) {
+                    return [
+                        'reason' => $reason,
+                        'total_amount' => $group->sum('bv_change'),
+                        'transaction_count' => $group->count(),
+                        'last_received' => $group->max('created_at')
+                    ];
+                })
+                ->values();
+            
+            // 6. Team Statistics
+            $allTeamMembers = $this->getAllDescendants($user);
+            $teamStats = [
+                'total_team_size' => $allTeamMembers->count(),
+                'active_team_members' => $allTeamMembers->where('isActive', 1)->count(),
+                'left_team_size' => $leftTeam->count(),
+                'right_team_size' => $rightTeam->count(),
+                'total_team_bv' => $allTeamMembers->sum('bv'),
+                'direct_referrals' => $directReferrals->count(),
+                'qualified_referrals' => $qualifiedReferrals->count()
+            ];
+            
+            // 7. Monthly Performance
+            $currentMonth = Carbon::now()->startOfMonth();
+            $monthlyBVIncome = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('type', 'credit')
+                ->where('created_at', '>=', $currentMonth)
+                ->sum('bv_change');
+            
+            $monthlyOrders = Order::where('user_id', $user->id)
+                ->where('created_at', '>=', $currentMonth)
+                ->count();
+            
+            // 8. Package & Rank Information
+            $packageInfo = [
+                'current_package' => $user->package ?? 'starter',
+                'current_bv' => $user->bv,
+                'next_package_threshold' => $this->getNextPackageThreshold($user->bv)
+            ];
+            
+            // 9. Recent Activities (Last 10 BV transactions)
+            $recentActivities = \App\Models\BvHistory::where('user_id', $userId)
+                ->with('referenceUser')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function($activity) {
+                    return [
+                        'date' => $activity->created_at->format('M d, Y H:i'),
+                        'type' => $activity->reason,
+                        'amount' => $activity->bv_change,
+                        'from_user' => $activity->referenceUser ? $activity->referenceUser->name : null,
+                        'description' => $this->getActivityDescription($activity)
+                    ];
+                });
+            
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'referral_bonus_bv' => (float) $referralBonusBV,
-                    'performance_bonus_bv' => (float) $performanceBonusBV,
-                    'sponsor_royalty_bv' => (float) $sponsorRoyaltyBV,
-                    'rank_bonus_bv' => (float) $rankBonusBV,
-                    'repurchase_income_bv' => (float) $repurchaseIncomeBV,
-                    'fast_track_bonus_bv' => (float) $fastTrackBonusBV,
-                    'star_achiever_pool_bv' => (float) $starAchieverPoolBV,
-                    'loyalty_bonus_bv' => (float) $loyaltyBonusBV,
-                    'direct_income_bv' => (float) $directIncomeBV,
-                    'total_left_team_bv' => (float) $leftTeamBV,
-                    'total_right_team_bv' => (float) $rightTeamBV,
-                    'all_team_bv' => (float) $allTeamBV,
+                'user_info' => [
+                    'user_id' => $user->user_id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'joined_date' => $user->created_at->format('M d, Y'),
+                    'is_active' => $user->isActive
+                ],
+                'financial_summary' => [
+                    'current_bv' => $user->bv,
+                    'total_personal_sales' => $totalPersonalSales,
+                    'total_personal_bv' => $totalPersonalBV,
+                    'total_referral_bonus' => $referralBonusReceived,
+                    'total_level_bonus' => $totalLevelBonus,
+                    'total_bv_income' => $allBVIncome->sum('total_amount'),
+                    'monthly_bv_income' => $monthlyBVIncome
+                ],
+                'sales_performance' => [
+                    'total_orders' => $personalOrders->count(),
+                    'completed_orders' => $completedOrders,
+                    'monthly_orders' => $monthlyOrders,
+                    'total_sales_value' => $totalPersonalSales
+                ],
+                'team_performance' => $teamStats,
+                'binary_team' => [
+                    'left_team_bv' => $leftTeamBV,
+                    'right_team_bv' => $rightTeamBV,
+                    'matching_bv' => $matchingBV,
+                    'carry_forward_left' => max(0, $leftTeamBV - $matchingBV),
+                    'carry_forward_right' => max(0, $rightTeamBV - $matchingBV)
+                ],
+                'income_breakdown' => $allBVIncome,
+                'level_bonuses' => $levelBonuses,
+                'package_info' => $packageInfo,
+                'recent_activities' => $recentActivities,
+                'referral_details' => [
+                    'total_referrals' => $directReferrals->count(),
+                    'qualified_referrals' => $qualifiedReferrals->count(),
+                    'referral_bonus_earned' => $referralBonusReceived
                 ]
             ]);
-
+            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch user dashboard data',
+                'message' => 'Failed to fetch comprehensive dashboard data',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+    
+    private function getNextPackageThreshold($currentBV)
+    {
+        $thresholds = [500 => 'starter', 1000 => 'builder', 2000 => 'performer', 4000 => 'leader', 10000 => 'legend'];
+        
+        foreach ($thresholds as $threshold => $package) {
+            if ($currentBV < $threshold) {
+                return ['threshold' => $threshold, 'package' => $package, 'remaining' => $threshold - $currentBV];
+            }
+        }
+        
+        return ['threshold' => 10000, 'package' => 'legend', 'remaining' => 0];
+    }
+    
+    private function getActivityDescription($activity)
+    {
+        $descriptions = [
+            'referral_bonus' => 'Referral bonus from team member',
+            'team_performance_bonus_level_1' => 'Level 1 team performance bonus',
+            'team_performance_bonus_level_2' => 'Level 2 team performance bonus',
+            'team_performance_bonus_level_3' => 'Level 3 team performance bonus',
+            'team_performance_bonus_level_4' => 'Level 4 team performance bonus',
+            'direct_sales' => 'Direct sales commission',
+            'matching_bonus' => 'Binary matching bonus'
+        ];
+        
+        return $descriptions[$activity->reason] ?? ucfirst(str_replace('_', ' ', $activity->reason));
+    }
+    
+    public function getUserMonthlyGrowth(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'nullable|exists:users,user_id']);
+            
+            $userId = $request->user_id ?? $request->user()->user_id;
+            
+            $monthlyGrowth = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('type', 'credit')
+                ->select(
+                    DB::raw('MONTH(created_at) as month'),
+                    DB::raw('YEAR(created_at) as year'),
+                    DB::raw('SUM(bv_change) as total_bv')
+                )
+                ->where('created_at', '>=', Carbon::now()->subMonths(12))
+                ->groupBy('year', 'month')
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'month' => Carbon::create($item->year, $item->month)->format('M Y'),
+                        'bv_earned' => (float) $item->total_bv
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $monthlyGrowth
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user monthly growth data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getUserBonusBreakdown(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'nullable|exists:users,user_id']);
+            
+            $userId = $request->user_id ?? $request->user()->user_id;
+            
+            $bonusBreakdown = \App\Models\BvHistory::where('user_id', $userId)
+                ->where('type', 'credit')
+                ->select('reason', DB::raw('SUM(bv_change) as total_amount'))
+                ->groupBy('reason')
+                ->get()
+                ->map(function($item) {
+                    $labels = [
+                        'referral_bonus' => 'Referral Bonus',
+                        'team_performance_bonus_level_1' => 'Level 1 Bonus',
+                        'team_performance_bonus_level_2' => 'Level 2 Bonus', 
+                        'team_performance_bonus_level_3' => 'Level 3 Bonus',
+                        'team_performance_bonus_level_4' => 'Level 4 Bonus',
+                        'direct_sales' => 'Direct Sales',
+                        'matching_bonus' => 'Matching Bonus'
+                    ];
+                    
+                    return [
+                        'name' => $labels[$item->reason] ?? ucfirst(str_replace('_', ' ', $item->reason)),
+                        'value' => (float) $item->total_amount
+                    ];
+                })
+                ->filter(function($item) {
+                    return $item['value'] > 0;
+                })
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => $bonusBreakdown
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch bonus breakdown data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
