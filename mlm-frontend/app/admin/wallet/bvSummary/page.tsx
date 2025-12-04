@@ -63,7 +63,7 @@ export default function BvSummary() {
 
       // Set latest BV
       if (result.length > 0) {
-        setCurrentBV(parseFloat(result[0].new_bv));
+        setCurrentBV(res?.data?.total_bv);
       }
     } catch (err) {
       console.log("BV History Fetch Error:", err);
@@ -71,6 +71,7 @@ export default function BvSummary() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchBvHistory();
@@ -134,7 +135,7 @@ export default function BvSummary() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-6">

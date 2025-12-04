@@ -5,15 +5,7 @@ import ProjectApiList from "@/app/api/ProjectApiList";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-export default function DeleteRoleModal({
-  role,
-  onClose,
-  onDeleted,
-}: {
-  role: any;
-  onClose: () => void;
-  onDeleted: () => void;
-}) {
+export default function DeleteRoleModal({ role, onClose, onDeleted }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
@@ -34,7 +26,6 @@ export default function DeleteRoleModal({
     } catch (error: any) {
       console.log(error);
 
-      // Extract backend message safely
       const msg =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -47,7 +38,7 @@ export default function DeleteRoleModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-3">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
       <div className="bg-white w-full max-w-sm rounded-xl shadow-xl p-6 border">
 
         <h2 className="text-xl font-semibold text-red-600">Delete Role</h2>
@@ -55,10 +46,10 @@ export default function DeleteRoleModal({
           Are you sure you want to delete <b>{role.name}</b>?
         </p>
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex flex-col md:flex-row justify-end gap-3 mt-6">
           <button
             onClick={onClose}
-            className="bg-white border px-4 py-2 rounded-lg text-sm hover:bg-gray-100"
+            className="bg-white border px-4 py-2 rounded-lg text-sm hover:bg-gray-100 w-full md:w-auto"
           >
             Cancel
           </button>
@@ -66,7 +57,7 @@ export default function DeleteRoleModal({
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 w-full md:w-auto"
           >
             {loading ? "Deleting..." : "Delete"}
           </button>

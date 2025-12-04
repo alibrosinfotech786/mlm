@@ -4,11 +4,11 @@ import React from "react";
 import Image from "next/image";
 
 const images = [
-  "/images/pp1.jpg",
-  "/images/pp2.jpg",
-  "/images/pp3.jpg",
-  "/images/pp4.jpg",
-  "/images/pp4.jpg",
+  "/images/pp1.jpeg",
+  "/images/pp2.jpeg",
+  "/images/pp3.jpeg",
+  "/images/pp4.jpeg",
+  "/images/pp5.jpeg",
 ];
 
 export default function BusinessOpportunity() {

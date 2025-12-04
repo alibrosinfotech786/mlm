@@ -11,9 +11,17 @@ interface TreeNode {
   id: string;
   name: string;
   photo?: string | null;
-  left?: TreeNode;
-  right?: TreeNode;
+
+  phone?: string;
+  sponsor_name?: string | null;
+  bv?: string | number;
+
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
+
+
+const MAX_LEVEL = 4;
 
 export default function TreeViewPage() {
   const [treeData, setTreeData] = useState<TreeNode | null>(null);
@@ -24,20 +32,53 @@ export default function TreeViewPage() {
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 
   const transformNode = (node: any): TreeNode => {
-    const user = node?.user;
-    const children = node?.children || [];
+    if (!node || !node.user)
+      return { id: "Vacant", name: "Vacant", photo: null };
 
-    const leftChild = children.find((c: any) => c.user?.position === "left");
-    const rightChild = children.find((c: any) => c.user?.position === "right");
+    const lvl = node.level;
+    const user = node.user;
 
+    const cleanChildren = (node.children || []).filter(
+      (c: any) => c && c.user
+    );
+
+    const leftChild = cleanChildren.find((c: any) => c.user.position === "left");
+    const rightChild = cleanChildren.find(
+      (c: any) => c.user.position === "right"
+    );
+
+    // ⭐ LEVEL 4 (stop recursion)
+    if (lvl >= MAX_LEVEL)
+      return {
+        id: user.user_id,
+        name: user.name,
+        phone: user.phone,
+        sponsor_name: user.sponsor_name,
+        bv: user.bv,
+        photo: user.profile_picture ? `${BASE_URL}/${user.profile_picture}` : null,
+        left: null,
+        right: null,
+      };
+
+    // ⭐ LEVEL 0–3 — include phone, sponsor, bv HERE ALSO
     return {
-      id: user?.user_id || "Vacant",
-      name: user?.name || "Vacant",
-      photo: user?.profile_picture ? `${BASE_URL}/${user.profile_picture}` : null,
-      left: leftChild ? transformNode(leftChild) : undefined,
-      right: rightChild ? transformNode(rightChild) : undefined,
+      id: user.user_id,
+      name: user.name,
+      phone: user.phone,
+      sponsor_name: user.sponsor_name,
+      bv: user.bv,
+      photo: user.profile_picture ? `${BASE_URL}/${user.profile_picture}` : null,
+
+      left: leftChild
+        ? transformNode(leftChild)
+        : { id: "Vacant", name: "Vacant", photo: null },
+
+      right: rightChild
+        ? transformNode(rightChild)
+        : { id: "Vacant", name: "Vacant", photo: null },
     };
   };
+
 
   const fetchTree = async (uid?: string) => {
     try {
@@ -49,119 +90,143 @@ export default function TreeViewPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (res.data.success && res.data.mlm_hierarchy) {
-        const root = res.data.mlm_hierarchy.user;
-        setUserDetails(root);
-
+      if (res.data.success) {
         const formatted = transformNode(res.data.mlm_hierarchy);
         setTreeData(formatted);
-      } else {
-        toast.error("User not found");
-      }
+        setUserDetails(res.data.mlm_hierarchy.user);
+      } else toast.error("User not found");
     } catch {
-      toast.error("Something went wrong");
+      toast.error("Error fetching tree");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user?.user_id) setSearchId(user.user_id), fetchTree(user.user_id);
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    if (u?.user_id) {
+      setSearchId(u.user_id);
+      fetchTree(u.user_id);
+    }
   }, []);
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
-      <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
+      <section className="min-h-screen bg-green-50/40 py-6 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
-          <h1 className="text-3xl font-bold text-green-800 mb-4">Tree View</h1>
+          <h1 className="text-2xl font-bold text-green-800">Tree View</h1>
 
-
-          {/*==================== Search + Details ====================*/}
+          {/* Search + Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Search Box */}
-            <div className="bg-white p-5 rounded-xl shadow-md border border-green-100">
-              <h2 className="text-lg font-bold text-green-800 mb-2">
-                Search Member
-              </h2>
-              <label className="block text-sm text-green-700 mb-1 font-medium">
-                Enter User ID
-              </label>
+            {/* Search */}
+            <div className="bg-white p-4 sm:p-5 rounded-xl shadow-md">
+              <h2 className="text-base sm:text-lg font-bold mb-3 text-green-800">Search Member</h2>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchId}
-                  onChange={(e) => setSearchId(e.target.value)}
-                  placeholder="Enter User ID"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={() => fetchTree(searchId)}
-                  className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800"
-                >
-                  Search
-                </button>
-                <button
-                  onClick={() => {
-                    const user = JSON.parse(localStorage.getItem("user") || "{}");
-                    setSearchId(user.user_id || "");
-                    fetchTree(user.user_id);
-                  }}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
-                >
-                  Reset
-                </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Input field - full width on mobile */}
+                <div className="w-full">
+                  <input
+                    value={searchId}
+                    onChange={(e) => setSearchId(e.target.value)}
+                    className="border border-gray-300 px-3 py-2 sm:py-2.5 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Enter User ID"
+                  />
+                </div>
+
+                {/* Buttons container - stack on mobile, row on tablet+ */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                  {/* Search button */}
+                  <button
+                    onClick={() => fetchTree(searchId)}
+                    className="bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex-1 sm:flex-none"
+                  >
+                    Search
+                  </button>
+
+                  {/* Reset button */}
+                  <button
+                    onClick={() => {
+                      const u = JSON.parse(localStorage.getItem("user") || "{}");
+                      if (u?.user_id) {
+                        setSearchId(u.user_id);
+                        fetchTree(u.user_id);
+                      }
+                    }}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex-1 sm:flex-none"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Optional: Display current user ID on mobile for clarity */}
+              <div className="mt-3 sm:hidden text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">Current:</span>
+                  <span className="truncate">{searchId || "Not set"}</span>
+                </div>
               </div>
             </div>
 
-            {/* User Details Box */}
-            <div className="bg-white p-5 rounded-xl shadow-md border border-green-100">
-              <h2 className="text-lg font-bold text-green-800 mb-2">
-                Member Details
-              </h2>
+            {/* Details */}
+            <div className="bg-white p-5 rounded-xl shadow-md">
+              <h2 className="text-lg font-bold mb-3 text-green-800">Member Details</h2>
 
               {userDetails ? (
-                <div className="text-sm text-green-900 space-y-1">
+                <div className="text-sm text-green-900 leading-5">
                   <p><b>User ID:</b> {userDetails.user_id}</p>
                   <p><b>Name:</b> {userDetails.name}</p>
-                  {/* <p><b>Email:</b> {userDetails.email}</p> */}
                   <p><b>Phone:</b> {userDetails.phone}</p>
                   <p><b>Sponsor:</b> {userDetails.sponsor_name || "N/A"}</p>
-                  <p><b>Position:</b> {userDetails.position || "Root"}</p>
-                  <p><b>BV:</b> {userDetails.bv || "0.00"}</p>
+                  <p><b>BV:</b> {userDetails.bv}</p>
                 </div>
               ) : (
-                <p className="text-gray-500">No user selected</p>
+                <p className="text-gray-400">No user selected</p>
               )}
             </div>
 
           </div>
 
-          {/*==================== Tree Section ====================*/}
-          <div className="bg-white rounded-xl shadow-md border border-green-100 p-6 overflow-auto">
+          {/* Tree */}
+          <div
+            className="
+    bg-white rounded-xl shadow-md border 
+    p-2 h-[600px] 
+    overflow-x-auto overflow-y-auto 
+    scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-gray-200
+  "
+          >
             {loading ? (
-              <p className="text-center p-10 font-semibold text-green-700">
-                Loading Tree View...
-              </p>
+              <p className="text-center py-10 text-green-700">Loading Tree...</p>
             ) : treeData ? (
-              <TreeView
-                data={treeData}
-                isRoot={true}
-                onNodeDoubleClick={(id: string) => {
-                  setSearchId(id);
-                  fetchTree(id);
-                }}
-              />
-
+              <div
+                className="
+    mx-auto 
+    transform origin-top
+    scale-[0.55] 
+    xs:scale-[0.60]
+    sm:scale-[0.70]
+    md:scale-[0.85]
+    lg:scale-100
+  "
+              >
+                <TreeView
+                  data={treeData}
+                  onNodeDoubleClick={(id) => {
+                    setSearchId(id);
+                    fetchTree(id);
+                  }}
+                />
+              </div>
             ) : (
-              <p className="text-center text-red-600">No Data</p>
+              <p className="text-red-600 text-center py-10">No Data</p>
             )}
           </div>
+
         </div>
       </section>
     </>

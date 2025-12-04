@@ -50,8 +50,10 @@ export default function TrainingsPage() {
     level: "",
     course_fee: "",
     image: null,
+    syllabus: [], // ⬅ NEW
   });
 
+  const [moduleInput, setModuleInput] = useState(""); // ⬅ for adding modules
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
@@ -60,6 +62,7 @@ export default function TrainingsPage() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  /*============ FETCH TRAININGS ============*/
   async function fetchTrainings() {
     try {
       setLoading(true);
@@ -82,6 +85,27 @@ export default function TrainingsPage() {
     fetchTrainings();
   }, []);
 
+  /*============ ADD MODULE ============*/
+  function addModule() {
+    if (!moduleInput.trim()) return;
+
+    setForm((prev: any) => ({
+      ...prev,
+      syllabus: [...prev.syllabus, moduleInput.trim()],
+    }));
+
+    setModuleInput("");
+  }
+
+  /*============ REMOVE MODULE ============*/
+  function removeModule(index: number) {
+    setForm((prev: any) => ({
+      ...prev,
+      syllabus: prev.syllabus.filter((_: any, i: number) => i !== index),
+    }));
+  }
+
+  /*============ IMAGE HANDLER ============*/
   function handleImageChange(e: any) {
     const file = e.target.files[0];
     if (file) {
@@ -90,7 +114,7 @@ export default function TrainingsPage() {
     }
   }
 
-  /**========== CREATE TRAINING (FormData) ==========*/
+  /*============ CREATE TRAINING ============*/
   async function handleCreateTraining(e: any) {
     e.preventDefault();
 
@@ -105,6 +129,11 @@ export default function TrainingsPage() {
     fd.append("level", form.level);
     fd.append("course_fee", form.course_fee);
 
+    // send syllabus array
+    form.syllabus.forEach((mod: string, index: number) => {
+      fd.append(`syllabus[${index}]`, mod);
+    });
+
     if (form.image) fd.append("image", form.image);
 
     try {
@@ -116,7 +145,7 @@ export default function TrainingsPage() {
       setOpenCreateModal(false);
       resetForm();
       fetchTrainings();
-    } catch {
+    } catch (err) {
       toast.error("Failed to create training");
     }
   }
@@ -134,11 +163,12 @@ export default function TrainingsPage() {
       level: "",
       course_fee: "",
       image: null,
+      syllabus: [],
     });
     setPreviewImage(null);
   }
 
-  /**========== OPEN EDIT MODAL ==========*/
+  /*============ OPEN EDIT MODAL ============*/
   function openEdit(training: any) {
     setSelectedTraining(training);
 
@@ -154,13 +184,14 @@ export default function TrainingsPage() {
       level: training.level,
       course_fee: training.course_fee,
       image: null,
+      syllabus: training.syllabus || [],
     });
 
     setPreviewImage(resolveImage(training.image));
     setOpenEditModal(true);
   }
 
-  /**========== UPDATE TRAINING (FormData) ==========*/
+  /*============ UPDATE TRAINING ============*/
   async function handleUpdateTraining(e: any) {
     e.preventDefault();
 
@@ -175,6 +206,11 @@ export default function TrainingsPage() {
     fd.append("description", form.description);
     fd.append("level", form.level);
     fd.append("course_fee", form.course_fee);
+
+    // send syllabus array
+    form.syllabus.forEach((mod: string, index: number) => {
+      fd.append(`syllabus[${index}]`, mod);
+    });
 
     if (form.image) fd.append("image", form.image);
 
@@ -191,7 +227,7 @@ export default function TrainingsPage() {
     }
   }
 
-  /**========== DELETE TRAINING ==========*/
+  /*============ DELETE TRAINING ============*/
   async function handleDeleteTraining() {
     try {
       await axiosInstance.post(ProjectApiList.deleteTraining, {
@@ -206,6 +242,7 @@ export default function TrainingsPage() {
     }
   }
 
+  /*============ TABLE ============*/
   const columns = [
     {
       key: "sno",
@@ -232,22 +269,13 @@ export default function TrainingsPage() {
     {
       key: "image",
       label: "Image",
-      render: (v: any) => {
-        const finalUrl = resolveImage(v);
-        console.log("TRAINING IMAGE:", v);
-        console.log("RESOLVED IMAGE URL:", finalUrl);
-
-        return v ? (
-          <img
-            src={finalUrl}
-            className="w-12 h-12 rounded object-cover"
-          />
-        ) : (
-          "-"
-        );
-      },
-    }
-,
+      render: (v: any) => (
+        <img
+          src={resolveImage(v)}
+          className="w-12 h-12 rounded object-cover"
+        />
+      ),
+    },
     {
       key: "actions",
       label: "Actions",
@@ -283,7 +311,7 @@ export default function TrainingsPage() {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="py-10 px-6">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -302,18 +330,22 @@ export default function TrainingsPage() {
                   <DialogTitle>Create Training</DialogTitle>
                 </DialogHeader>
 
+                {/* CREATE FORM */}
                 <form onSubmit={handleCreateTraining} className="space-y-4">
+
+                  {/* BASIC INPUTS */}
                   <div className="grid grid-cols-2 gap-4">
                     <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} min={today} />
                     <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
-                    <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
-                    <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
-                    <InputBox label="Venue" type="text" name="venue" form={form} setForm={setForm} />
-                    <InputBox label="Duration" type="text" name="duration" form={form} setForm={setForm} />
-                    <InputBox label="Level" type="text" name="level" form={form} setForm={setForm} placeholder="Beginner / Intermediate" />
+                    <InputBox label="Topic" name="topic" form={form} setForm={setForm} />
+                    <InputBox label="Trainer" name="trainer" form={form} setForm={setForm} />
+                    <InputBox label="Venue" name="venue" form={form} setForm={setForm} />
+                    <InputBox label="Duration" name="duration" form={form} setForm={setForm} />
+                    <InputBox label="Level" name="level" form={form} setForm={setForm} />
                     <InputBox label="Course Fee (INR)" type="number" name="course_fee" form={form} setForm={setForm} />
                   </div>
 
+                  {/* DESCRIPTION */}
                   <textarea
                     rows={3}
                     className="w-full border rounded-md p-2"
@@ -322,15 +354,54 @@ export default function TrainingsPage() {
                     placeholder="Description"
                   />
 
-                  {/* IMAGE UPLOAD */}
+                  {/* ===========================
+                        SYLLABUS MODULE INPUT
+                  ============================ */}
+                  <div>
+                    <label className="font-medium">Syllabus Modules</label>
+
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="text"
+                        className="border p-2 rounded w-full"
+                        placeholder="Enter module name"
+                        value={moduleInput}
+                        onChange={(e) => setModuleInput(e.target.value)}
+                      />
+                      <Button type="button" onClick={addModule}>
+                        Add
+                      </Button>
+                    </div>
+
+                    {/* LIST OF MODULES */}
+                    <div className="mt-3 space-y-2">
+                      {form.syllabus.map((mod: string, index: number) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-green-50 p-2 rounded"
+                        >
+                          <span>{mod}</span>
+                          <button
+                            type="button"
+                            className="text-red-600"
+                            onClick={() => removeModule(index)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* IMAGE */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium">Training Banner (Image)</label>
+                    <label className="text-sm font-medium">Training Banner</label>
 
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="border rounded-md p-2"
+                      className="border p-2 rounded"
                     />
 
                     {previewImage && (
@@ -339,7 +410,7 @@ export default function TrainingsPage() {
                         alt="preview"
                         width={200}
                         height={150}
-                        className="rounded-md mt-2 border"
+                        className="rounded mt-2 border"
                       />
                     )}
                   </div>
@@ -373,7 +444,9 @@ export default function TrainingsPage() {
         </div>
       </section>
 
-      {/* EDIT MODAL */}
+      {/* ============================================
+            EDIT TRAINING
+      ============================================ */}
       <Dialog open={openEditModal} onOpenChange={setOpenEditModal}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -381,15 +454,16 @@ export default function TrainingsPage() {
           </DialogHeader>
 
           <form onSubmit={handleUpdateTraining} className="space-y-4">
+
             <div className="grid grid-cols-2 gap-4">
               <InputBox label="Date" type="date" name="date" form={form} setForm={setForm} />
               <InputBox label="Time" type="time" name="time" form={form} setForm={setForm} />
-              <InputBox label="Topic" type="text" name="topic" form={form} setForm={setForm} />
-              <InputBox label="Trainer" type="text" name="trainer" form={form} setForm={setForm} />
-              <InputBox label="Venue" type="text" name="venue" form={form} setForm={setForm} />
-              <InputBox label="Duration" type="text" name="duration" form={form} setForm={setForm} />
-              <InputBox label="Level" type="text" name="level" form={form} setForm={setForm} />
-              <InputBox label="Course Fee (INR)" type="number" name="course_fee" form={form} setForm={setForm} />
+              <InputBox label="Topic" name="topic" form={form} setForm={setForm} />
+              <InputBox label="Trainer" name="trainer" form={form} setForm={setForm} />
+              <InputBox label="Venue" name="venue" form={form} setForm={setForm} />
+              <InputBox label="Duration" name="duration" form={form} setForm={setForm} />
+              <InputBox label="Level" name="level" form={form} setForm={setForm} />
+              <InputBox label="Course Fee" type="number" name="course_fee" form={form} setForm={setForm} />
             </div>
 
             <textarea
@@ -399,9 +473,43 @@ export default function TrainingsPage() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
 
-            {/* IMAGE UPLOAD */}
+            {/* SYLLABUS EDIT */}
             <div>
-              <label className="text-sm font-medium">Training Image</label>
+              <label className="font-medium">Syllabus Modules</label>
+
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  className="border p-2 rounded w-full"
+                  placeholder="Enter module name"
+                  value={moduleInput}
+                  onChange={(e) => setModuleInput(e.target.value)}
+                />
+                <Button type="button" onClick={addModule}>Add</Button>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {form.syllabus.map((mod: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center bg-green-50 p-2 rounded"
+                  >
+                    <span>{mod}</span>
+                    <button
+                      type="button"
+                      className="text-red-600"
+                      onClick={() => removeModule(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Image */}
+            <div>
+              <label>Training Image</label>
               <input type="file" onChange={handleImageChange} className="border p-2 rounded-md w-full" />
 
               {previewImage && (
@@ -410,7 +518,7 @@ export default function TrainingsPage() {
                   alt="preview"
                   width={200}
                   height={150}
-                  className="rounded-md mt-2 border"
+                  className="rounded mt-2 border"
                 />
               )}
             </div>
@@ -447,7 +555,8 @@ export default function TrainingsPage() {
   );
 }
 
-function InputBox({ label, type, name, form, setForm, placeholder = "", min }: any) {
+/*============ INPUT COMPONENT ============*/
+function InputBox({ label, type = "text", name, form, setForm, placeholder = "", min }: any) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium">{label}</label>

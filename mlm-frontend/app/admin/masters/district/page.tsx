@@ -284,9 +284,8 @@ export default function DistrictPage() {
           <button
             disabled={isCreateDisabled}
             onClick={() => setShowCreateConfirm(true)}
-            className={`rounded-lg py-2 font-semibold text-white transition ${
-              isCreateDisabled ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 shadow"
-            }`}
+            className={`rounded-lg py-2 font-semibold text-white transition ${isCreateDisabled ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 shadow"
+              }`}
           >
             Save
           </button>
@@ -351,9 +350,9 @@ export default function DistrictPage() {
                   <td colSpan={5} className="text-center py-6 text-gray-500">No districts found.</td>
                 </tr>
               ) : (
-                districts.map((d) => (
+                districts.map((d, i) => (
                   <tr key={d.id} className="border-b hover:bg-green-50 transition">
-                    <td className="p-3">{d.id}</td>
+                    <td className="p-3">{i + 1}</td>
                     <td className="p-3">{d.name}</td>
                     <td className="p-3">{d.code}</td>
                     <td className="p-3">{d.state?.name || "N/A"}</td>

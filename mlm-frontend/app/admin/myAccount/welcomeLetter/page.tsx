@@ -78,11 +78,23 @@ export default function WelcomeLetter() {
 
   return (
     <>
-      <AdminHeader />
-      <section className="relative min-h-screen py-10 px-4 flex justify-center print:py-0">
+      {/* <AdminHeader /> */}
+      <section className="relative min-h-screen pt-6 pb-10 px-2 sm:px-4 flex justify-center print:py-0">
 
         {/* IMAGE CONTAINER */}
-        <div className="relative max-w-[820px] w-full print:max-w-full text-justify">
+        <div
+          className="
+    relative 
+    max-w-[820px] 
+    w-full 
+    print:max-w-full 
+    text-justify
+    mx-auto
+    transform 
+    origin-top
+    scale-[0.65] xs:scale-[0.75] sm:scale-[0.85] md:scale-100
+  "
+        >
 
           {/* ⭐ MOVE LOGO HERE — ABOVE TEXT BLOCK ⭐ */}
           <div className="absolute top-[2%] right-[8%] z-30">

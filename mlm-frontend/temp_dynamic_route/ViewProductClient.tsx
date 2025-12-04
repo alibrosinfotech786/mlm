@@ -53,7 +53,7 @@ export default function ViewProductClient({ id }: { id: string }) {
   if (loading) {
     return (
       <>
-        <AdminHeader />
+        {/* <AdminHeader /> */}
         <div className="min-h-screen flex items-center justify-center text-gray-600">Loading product...</div>
       </>
     );
@@ -62,7 +62,7 @@ export default function ViewProductClient({ id }: { id: string }) {
   if (!product) {
     return (
       <>
-        <AdminHeader />
+        {/* <AdminHeader /> */}
         <div className="min-h-screen flex items-center justify-center text-gray-600">Product not found.</div>
       </>
     );
@@ -90,7 +90,7 @@ export default function ViewProductClient({ id }: { id: string }) {
 
   return (
     <>
-      <AdminHeader />
+      {/* <AdminHeader /> */}
 
       <section className="min-h-screen bg-green-50/40 py-10 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto space-y-8">
