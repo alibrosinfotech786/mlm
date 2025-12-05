@@ -313,10 +313,16 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
+            // Use remote URLs for images - DomPDF can load them with isRemoteEnabled = true
+            $backgroundImagePath = 'https://trust.alibrosinfotech.com/_next/static/media/welcomeletter.4e713bec.jpg';
+            $logoPath = 'https://trust.alibrosinfotech.com/images/logo.png';
+
             // Generate PDF using PdfService
             $pdfService = new PdfService();
             $pdfData = $pdfService->generateFromView('emails.welcome-letter', [
-                'user' => $user
+                'user' => $user,
+                'backgroundImagePath' => $backgroundImagePath,
+                'logoPath' => $logoPath
             ], [
                 'isRemoteEnabled' => true,
                 'paper' => 'A4',
@@ -331,6 +337,8 @@ class AuthController extends Controller
                 'message' => 'Welcome letter sent successfully to ' . $user->email
             ]);
         } catch (Exception $e) {
+            \Log::error('sendWelcomeLetter error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'error_type' => 'EMAIL_SEND_ERROR',

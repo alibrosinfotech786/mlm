@@ -3,126 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Welcome Letter - Tathastu Ayurveda</title>
-    <!--[if mso]>
-    <style type="text/css">
-        body, table, td {font-family: Arial, sans-serif !important;}
-    </style>
-    <![endif]-->
     <style>
-        /* Help Dompdf render full width on A4 without cutting the right side */
         @page {
-            margin: 20mm 15mm;
+            margin: 0;
+            size: A4 portrait;
         }
 
         body {
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .bg-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .logo-img {
+            position: absolute;
+            top: 15px;
+            right: 8%;
+            width: 140px;
+            height: 140px;
+            z-index: 30;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 20;
+            padding: 154px 60px 50px 60px;
+            color: #1f2937;
+            line-height: 1.4;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #c2410c;
+            margin-bottom: 0.5rem;
+            margin-top: 0;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #c2410c;
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #c2410c;
+            margin-bottom: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        p {
+            font-size: 0.75rem;
+            margin-bottom: 0.65rem;
+            text-align: justify;
+        }
+
+        .detail-row {
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .detail-label {
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: #1f2937;
+        }
+
+        .detail-value.highlight {
+            color: #c2410c;
+            font-weight: 600;
+        }
+
+        .closing {
+            margin-top: 0.8rem;
+            font-size: 0.75rem;
+        }
+
+        .closing-bold {
+            font-weight: 600;
+        }
+
+        .closing-company {
+            font-weight: 600;
+            color: #c2410c;
+        }
+
+        .closing-tagline {
+            font-size: 0.7rem;
+            font-style: italic;
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f0; font-family: Arial, sans-serif;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f0; padding: 20px 0;">
-        <tr>
-            <td align="center">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="540" style="width: 100%; max-width: 540px; background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    
-                    <!-- Decorative Top Border -->
-                    <tr>
-                        <td style="background-color: #86efac; height: 20px; padding: 0; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                            &nbsp;
-                        </td>
-                    </tr>
-                    
-                    <!-- Header Section -->
-                    <tr>
-                        <td style="padding: 30px 40px 20px 40px; background-color: #ffffff;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="vertical-align: top;">
-                                        <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: bold; color: #16a34a; line-height: 1.2; font-family: Arial, sans-serif;">Welcome Letter</h1>
-                                        <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.5; font-family: Arial, sans-serif;">
-                                            Welcome to our ever shine family of <span style="color: #16a34a; font-weight: 500;">Tathastu Ayurveda Pvt Ltd</span>
-                                        </p>
-                                    </td>
-                                    <td style="vertical-align: top; text-align: right; width: 90px; padding-left: 20px;">
-                                        <img src="https://www.tathastuayurveda.world/images/logo.png" alt="Tathastu Ayurveda Logo" width="90" height="90" style="display: block; max-width: 90px; height: auto; border: 0;" />
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    
-                    <!-- Content Section -->
-                    <tr>
-                        <td style="padding: 0 40px 30px 40px; background-color: #ffffff;">
-                            <!-- Welcome Message -->
-                            <p style="margin: 0 0 20px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                It gives us immense pleasure to welcome you as a <strong style="color: #16a34a; font-weight: 600;">Global Business Associate</strong> of <strong style="color: #16a34a; font-weight: 600;">Tathastu Ayurveda Pvt Ltd</strong>.
-                            </p>
-                            
-                            <!-- Details Section -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Associate Name:</strong> <span style="color: #333333;">{{ $user->name ?? '-' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">User ID:</strong> <span style="color: #333333;">{{ $user->user_id ?? '-' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Sponsor ID:</strong> <span style="color: #333333;">{{ $user->sponsor_id ?? 'N/A' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Sponsor Name:</strong> <span style="color: #333333;">{{ $user->sponsor_name ?? 'N/A' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Joining Date:</strong> <span style="color: #333333;">{{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('D M d Y') : '-' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Date of Activation:</strong> <span style="color: #333333;">{{ $user->isActive ? ($user->updated_at ? \Carbon\Carbon::parse($user->updated_at)->format('D M d Y') : 'Activated') : 'Not Activated' }}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <strong style="font-weight: 600; color: #333333;">Status:</strong> <span style="color: #16a34a; font-weight: 600;">{{ $user->isActive ? 'Active' : 'Not Active' }}</span>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <!-- Closing -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                                <tr>
-                                    <td style="font-size: 14px; color: #333333; line-height: 1.6; font-family: Arial, sans-serif;">
-                                        <p style="margin: 0 0 5px 0; font-weight: 600; color: #333333;">With Best Regards,</p>
-                                        <p style="margin: 0; color: #16a34a; font-weight: 500;">Tathastu Ayurveda Pvt Ltd</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    
-                    <!-- Decorative Bottom Border -->
-                    <tr>
-                        <td style="background-color: #86efac; height: 20px; padding: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                            &nbsp;
-                        </td>
-                    </tr>
-                    
-                </table>
-            </td>
-        </tr>
-    </table>
+<body>
+    <div class="wrapper">
+        @if(!empty($backgroundImagePath))
+        <img src="{{ $backgroundImagePath }}" alt="" class="bg-img" style="width: 100%; height: auto;" />
+        @endif
+
+        @if(!empty($logoPath))
+        <img src="{{ $logoPath }}" alt="Logo" class="logo-img" />
+        @endif
+
+        <div class="content-wrapper">
+            <h1>Welcome Letter</h1>
+
+            <h2>Welcome to the Tathastu Ayurveda Family</h2>
+
+            <p>
+                It gives us immense pleasure to welcome you as a valued Distributor of
+                <strong style="color: #c2410c;"> Tathastu Ayurveda</strong>.
+                You are now part of a transparent, ethical, and fast-growing wellness organization
+                dedicated to transforming lives through authentic Ayurvedic products and
+                digital entrepreneurship.
+            </p>
+
+            <p>
+                As you begin this exciting journey, we extend our best wishes for your growth and
+                success. Your Distributor ID and other details mentioned below will be required for
+                all future communication with the company. Kindly ensure that your contact and mailing
+                details are accurate for seamless correspondence.
+            </p>
+
+            <p>
+                If you need any assistance or clarification at any point, our Business Support Team
+                is always available to guide you.
+            </p>
+
+            <h3>Your Registration Details</h3>
+
+            <div class="detail-row">
+                <span class="detail-label">Distributor Name:</span>
+                <span class="detail-value"> {{ $user->name ?? '-' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Distributor ID:</span>
+                <span class="detail-value"> {{ $user->user_id ?? '-' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Sponsor ID:</span>
+                <span class="detail-value"> {{ $user->sponsor_id ?? 'N/A' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Sponsor Name:</span>
+                <span class="detail-value"> {{ $user->sponsor_name ?? 'N/A' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Joining Date:</span>
+                <span class="detail-value"> {{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('D M d Y') : '-' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Activation Date:</span>
+                <span class="detail-value"> {{ ($user->activationDate ?? $user->activation_date) ?: 'Not Activated' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value highlight"> Active</span>
+            </div>
+
+            <p>
+                Tathastu Ayurveda congratulates you on taking your first step towards a
+                prosperous and rewarding future. We look forward to seeing you grow, lead,
+                and achieve great success within our system.
+            </p>
+
+            <div class="closing">
+                <p>
+                    <span class="closing-bold">With Warm Regards,</span><br />
+                    <span class="closing-company">Tathastu Ayurveda</span><br />
+                    <span class="closing-tagline">Empowering Wellness, Wealth & Wisdom</span>
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
