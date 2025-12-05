@@ -193,7 +193,7 @@ export default function AllWalletRequests() {
             Track wallet requests and approve/reject them here.
           </p>
 
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
               data={walletData}
@@ -211,7 +211,186 @@ export default function AllWalletRequests() {
               onNext={handleNext}
               emptyMessage="No wallet request records found"
             />
+          </div> */}
+
+          {/* WALLET REQUESTS TABLE */}
+          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+
+            {/* SEARCH + ENTRIES */}
+            <div className="p-4 border-b flex justify-between items-center">
+
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search by user / transaction ID"
+                className="border px-3 py-2 rounded-md w-72 text-sm"
+              />
+
+              <div className="flex items-center gap-2 text-sm">
+                <span>Show</span>
+                <select
+                  value={entries}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                </select>
+                <span>entries</span>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 border-r">Request Date</th>
+                    <th className="px-4 py-3 border-r">Request By</th>
+                    <th className="px-4 py-3 border-r">Request To</th>
+                    <th className="px-4 py-3 border-r">Amount (₹)</th>
+                    <th className="px-4 py-3 border-r">Transaction ID</th>
+                    <th className="px-4 py-3 border-r">Description</th>
+                    <th className="px-4 py-3 border-r">Attachment</th>
+                    <th className="px-4 py-3 border-r">Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6">
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : walletData.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6 text-gray-500">
+                        No wallet request records found
+                      </td>
+                    </tr>
+                  ) : (
+                    walletData.map((row, index) => (
+                      <tr key={index} className="border-b hover:bg-green-50 transition">
+
+                        <td className="px-4 py-3 border-r">{row.requestDate}</td>
+
+                        <td className="px-4 py-3 border-r">{row.requestBy}</td>
+
+                        <td className="px-4 py-3 border-r">{row.requestTo}</td>
+
+                        <td className="px-4 py-3 border-r font-semibold text-green-700">
+                          ₹{row.amount}
+                        </td>
+
+                        <td className="px-4 py-3 border-r">{row.transactionId}</td>
+
+                        <td className="px-4 py-3 border-r max-w-[150px] truncate" title={row.description}>
+                          {row.description}
+                        </td>
+
+                        {/* ATTACHMENT */}
+                        <td className="px-4 py-3 border-r">
+                          {row.attachment ? (
+                            <a
+                              href={row.attachment}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-700 hover:underline font-medium"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        {/* STATUS DROPDOWN */}
+                        <td className="px-4 py-3 border-r">
+                          <select
+                            value={row.status.toLowerCase()}
+                            onChange={(e) =>
+                              updateStatus(
+                                row.id,
+                                e.target.value as "approved" | "pending" | "rejected"
+                              )
+                            }
+                            disabled={loading}
+                            className={`rounded-md px-2 py-1 text-xs cursor-pointer focus:ring-2 focus:ring-green-600 
+                  ${row.status.toLowerCase() === "approved"
+                                ? "bg-green-100 text-green-700 border border-green-400"
+                                : row.status.toLowerCase() === "pending"
+                                  ? "bg-yellow-100 text-yellow-700 border border-yellow-400"
+                                  : "bg-red-100 text-red-700 border border-red-400"
+                              }`}
+                          >
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </td>
+
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t gap-4">
+
+              {/* Pagination Controls */}
+              <div className="flex items-center gap-2">
+
+                {/* Prev */}
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className={`px-3 py-1 border rounded text-sm ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                    }`}
+                >
+                  Prev
+                </button>
+
+                {/* Page Numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setPage(num)}
+                    className={`px-3 py-1 border rounded text-sm ${num === page
+                        ? "bg-green-600 text-white border-green-600"
+                        : "hover:bg-green-100"
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+
+                {/* Next */}
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className={`px-3 py-1 border rounded text-sm ${page === totalPages
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-green-100"
+                    }`}
+                >
+                  Next
+                </button>
+
+              </div>
+            </div>
+
           </div>
+
         </div>
       </section>
     </>

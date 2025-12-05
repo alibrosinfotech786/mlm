@@ -148,7 +148,7 @@ export default function BvSummary() {
 
           <h1 className="text-2xl font-bold text-green-800">BV Summary</h1>
 
-          <DataTable<TableRow>
+          {/* <DataTable<TableRow>
             columns={columns}
             data={filteredData}
             loading={loading}
@@ -164,7 +164,145 @@ export default function BvSummary() {
             onPrevious={handlePrevious}
             onNext={handleNext}
             emptyMessage="No BV history found"
-          />
+          /> */}
+
+          {/* BV SUMMARY TABLE */}
+          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+
+            {/* SEARCH + ENTRIES */}
+            <div className="p-4 border-b flex justify-between items-center">
+
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search BV history..."
+                className="border px-3 py-2 rounded-md w-72 text-sm"
+              />
+
+              <div className="flex items-center gap-2 text-sm">
+                <span>Show</span>
+                <select
+                  value={entries}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                </select>
+                <span>entries</span>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 border-r">Tran Date</th>
+                    <th className="px-4 py-3 border-r">Description</th>
+                    <th className="px-4 py-3 border-r">CR (BV)</th>
+                    <th className="px-4 py-3 border-r">DR (BV)</th>
+                    <th className="px-4 py-3">Available BV</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-6">Loading...</td>
+                    </tr>
+                  ) : filteredData.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-6 text-gray-500">
+                        No BV history found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredData.map((row, index) => (
+                      <tr key={index} className="border-b hover:bg-green-50">
+
+                        <td className="px-4 py-3 border-r">{row.tranDate}</td>
+
+                        <td className="px-4 py-3 border-r">{row.description}</td>
+
+                        <td className="px-4 py-3 border-r">
+                          {row.cr !== "-" ? (
+                            <span className="text-green-600 font-semibold">{row.cr}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 border-r">
+                          {row.dr !== "-" ? (
+                            <span className="text-red-600 font-semibold">{row.dr}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-blue-700 font-semibold">
+                          {row.balance}
+                        </td>
+
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t gap-4">
+
+              <div className="flex items-center gap-2">
+                {/* Prev */}
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className={`px-3 py-1 border rounded text-sm ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                    }`}
+                >
+                  Prev
+                </button>
+
+                {/* Page Numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setPage(num)}
+                    className={`px-3 py-1 border rounded text-sm ${num === page
+                        ? "bg-green-600 text-white border-green-600"
+                        : "hover:bg-green-100"
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+
+                {/* Next */}
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className={`px-3 py-1 border rounded text-sm ${page === totalPages
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-green-100"
+                    }`}
+                >
+                  Next
+                </button>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       </section>
     </>

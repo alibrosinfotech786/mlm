@@ -42,7 +42,7 @@ export default function EventCardsSection() {
     try {
       setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.eventsList);
-      setEvents(res.data.events || []);
+      setEvents(res.data.events?.data || []);
     } catch {
       toast.error("Unable to load events");
     } finally {

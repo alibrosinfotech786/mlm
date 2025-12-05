@@ -137,8 +137,8 @@ export default function AllOrdersPage() {
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ||
-          err?.response?.data?.errors?.order_id?.[0] ||
-          "Refund failed!"
+        err?.response?.data?.errors?.order_id?.[0] ||
+        "Refund failed!"
       );
     } finally {
       setRefundLoading(false);
@@ -185,17 +185,16 @@ export default function AllOrdersPage() {
           value={value}
           disabled={statusLoadingId === row.id}
           onChange={(e) => updateStatus(row.id, e.target.value)}
-          className={`px-2 py-1 text-xs rounded border ${
-            value === "delivered"
+          className={`px-2 py-1 text-xs rounded border ${value === "delivered"
               ? "bg-green-100 text-green-700"
               : value === "shipped"
-              ? "bg-blue-100 text-blue-700"
-              : value === "confirmed"
-              ? "bg-purple-100 text-purple-700"
-              : value === "pending"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-red-100 text-red-700"
-          }`}
+                ? "bg-blue-100 text-blue-700"
+                : value === "confirmed"
+                  ? "bg-purple-100 text-purple-700"
+                  : value === "pending"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+            }`}
         >
           {statusLoadingId === row.id ? (
             <option>Updating...</option>
@@ -236,7 +235,7 @@ export default function AllOrdersPage() {
         <div className="max-w-7xl mx-auto space-y-6">
           <h1 className="text-2xl font-bold text-green-800">All Orders</h1>
 
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
               data={paginatedData}
@@ -251,7 +250,180 @@ export default function AllOrdersPage() {
               onNext={() => setPage((p) => Math.min(p + 1, totalPages || 1))}
               emptyMessage="No orders yet"
             />
+          </div> */}
+
+          {/* CUSTOM TABLE UI */}
+          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+
+            {/* SEARCH + ENTRIES */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search order number, name, status..."
+                className="border px-3 py-2 rounded-md w-72 text-sm"
+              />
+
+              <div className="flex items-center gap-2 text-sm">
+                <span>Show</span>
+                <select
+                  value={entries}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                </select>
+                <span>entries</span>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 border-r">Order No</th>
+                    <th className="px-4 py-3 border-r">Customer</th>
+                    <th className="px-4 py-3 border-r">Date</th>
+                    <th className="px-4 py-3 border-r">Items</th>
+                    <th className="px-4 py-3 border-r">Payment</th>
+                    <th className="px-4 py-3 border-r">Total (₹)</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center">
+                        Loading orders...
+                      </td>
+                    </tr>
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-gray-500">
+                        No orders found
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedData.map((row) => (
+                      <tr key={row.id} className="border-b hover:bg-green-50">
+
+                        <td className="px-4 py-3 border-r">
+                          <button
+                            className="text-green-700 font-semibold hover:underline"
+                            onClick={() => openOrderDetails(row)}
+                          >
+                            {row.order_number}
+                          </button>
+                        </td>
+
+                        <td className="px-4 py-3 border-r">{row.billing_full_name}</td>
+
+                        <td className="px-4 py-3 border-r">
+                          {new Date(row.created_at).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+
+                        <td className="px-4 py-3 border-r">{row.order_items.length}</td>
+
+                        <td className="px-4 py-3 border-r uppercase">
+                          {row.payment_mode}
+                        </td>
+
+                        <td className="px-4 py-3 border-r">
+                          ₹ {Number(row.total_mrp).toFixed(2)}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <select
+                            value={row.status}
+                            disabled={statusLoadingId === row.id}
+                            onChange={(e) => updateStatus(row.id, e.target.value)}
+                            className={`px-2 py-1 text-xs rounded border ${row.status === "delivered"
+                                ? "bg-green-100 text-green-700"
+                                : row.status === "shipped"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : row.status === "confirmed"
+                                    ? "bg-purple-100 text-purple-700"
+                                    : row.status === "pending"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-red-100 text-red-700"
+                              }`}
+                          >
+                            {statusLoadingId === row.id ? (
+                              <option>Updating...</option>
+                            ) : (
+                              <>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="refunded">Refunded</option>
+                              </>
+                            )}
+                          </select>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="p-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className={`px-3 py-1 border rounded ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                    }`}
+                >
+                  Prev
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setPage(num)}
+                    className={`px-3 py-1 border rounded text-sm ${num === page
+                        ? "bg-green-600 text-white"
+                        : "hover:bg-green-100"
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className={`px-3 py-1 border rounded ${page === totalPages
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-green-100"
+                    }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
@@ -271,7 +443,7 @@ export default function AllOrdersPage() {
             <div className="space-y-4">
               {/* ========== 3 COLUMNS ========== */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
+
                 {/* ORDER INFO */}
                 <div className="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
                   <h3 className="font-semibold text-green-800 mb-2 text-md">
@@ -286,17 +458,16 @@ export default function AllOrdersPage() {
                   <p className="text-sm flex gap-2 items-center">
                     <strong>Status:</strong>
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        selectedOrder.status === "delivered"
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${selectedOrder.status === "delivered"
                           ? "bg-green-100 text-green-700"
                           : selectedOrder.status === "shipped"
-                          ? "bg-blue-100 text-blue-700"
-                          : selectedOrder.status === "confirmed"
-                          ? "bg-purple-100 text-purple-700"
-                          : selectedOrder.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                            ? "bg-blue-100 text-blue-700"
+                            : selectedOrder.status === "confirmed"
+                              ? "bg-purple-100 text-purple-700"
+                              : selectedOrder.status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                        }`}
                     >
                       {selectedOrder.status.toUpperCase()}
                     </span>

@@ -141,8 +141,8 @@ export default function FileManagerListing() {
                             <th className="px-4 py-3 border-b border-border">Preview</th>
                             <th className="px-4 py-3 border-b border-border">Name</th>
                             <th className="px-4 py-3 border-b border-border">Description</th>
-                            <th className="px-4 py-3 border-b border-border">Type</th>
-                            <th className="px-4 py-3 border-b border-border">Size</th>
+                            {/* <th className="px-4 py-3 border-b border-border">Type</th> */}
+                            {/* <th className="px-4 py-3 border-b border-border">Size</th> */}
                             <th className="px-4 py-3 border-b border-border">Uploaded</th>
                             <th className="px-4 py-3 border-b border-border text-center">
                                 Action
@@ -216,11 +216,11 @@ export default function FileManagerListing() {
                                         <td className="px-4 py-3 font-medium">{file.name || "-"}</td>
                                         <td className="px-4 py-3 font-medium">{file.description || "-"}</td>
 
-                                        <td className="px-4 py-3 uppercase">{file.file_type}</td>
+                                        {/* <td className="px-4 py-3 uppercase">{file.file_type}</td> */}
 
-                                        <td className="px-4 py-3">
+                                        {/* <td className="px-4 py-3">
                                             {(file.file_size / 1024 / 1024).toFixed(2)} MB
-                                        </td>
+                                        </td> */}
 
                                         <td className="px-4 py-3">
                                             {new Date(file.created_at).toLocaleDateString("en-GB")}

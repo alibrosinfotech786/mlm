@@ -6,6 +6,7 @@ export interface Column<T> {
   key: keyof T;
   label: string;
   render?: (value: any, row: T, index: number) => React.ReactNode;
+  width?: string;
 }
 
 export interface DataTableProps<T> {
@@ -45,7 +46,7 @@ function DataTableInner<T>({
 }: DataTableProps<T>) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 shadow-sm bg-white w-full overflow-hidden ${className}`}
+      className={`rounded-xl border border-gray-200 shadow-sm bg-white w-full ${className}`}
     >
       {/* ===== Search Bar ===== */}
       {showSearch && (
@@ -64,22 +65,23 @@ function DataTableInner<T>({
         </div>
       )}
 
-      {/* TABLE WRAPPER — RESPONSIVE */}
-      <div className="overflow-x-auto overflow-y-visible max-w-full">
-        <table className="min-w-max w-full text-sm text-left border-collapse">
+      {/* TABLE CONTAINER - REMOVE horizontal scrolling */}
+      <div className="overflow-x-hidden">
+        <table className="w-full text-sm text-left border-collapse table-fixed">
           <thead className="bg-gray-100 text-gray-700 font-semibold">
             <tr>
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className="px-5 py-3 border-b border-gray-200 text-xs uppercase tracking-wide whitespace-nowrap"
+                  className="px-3 py-3 border-b border-gray-200 text-xs uppercase tracking-wide whitespace-nowrap overflow-hidden text-ellipsis"
+                  style={{ width: col.width || "auto" }}
+                  title={col.label}
                 >
                   {col.label}
                 </th>
               ))}
             </tr>
           </thead>
-
           <tbody className="divide-y divide-gray-100 text-gray-800">
             {loading ? (
               <tr>
@@ -105,11 +107,17 @@ function DataTableInner<T>({
                   {columns.map((col, colIndex) => (
                     <td
                       key={colIndex}
-                      className="px-5 py-3 border-b border-gray-100 text-sm whitespace-nowrap"
+                      className="px-3 py-3 border-b border-gray-100 text-sm overflow-hidden text-ellipsis align-top"
+                      style={{ width: col.width || "auto" }}
+                      title={col.render ? undefined : String((row as any)[col.key] || "-")}
                     >
                       {col.render
                         ? col.render((row as any)[col.key], row, index)
-                        : (row as any)[col.key] ?? "-"}
+                        : (
+                          <div className="max-w-full truncate">
+                            {(row as any)[col.key] ?? "-"}
+                          </div>
+                        )}
                     </td>
                   ))}
                 </tr>
@@ -122,7 +130,6 @@ function DataTableInner<T>({
       {/* ===== Pagination + Entries ===== */}
       {showPagination && (
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-700">
-
           {/* Entries Selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm">Show:</span>
@@ -164,7 +171,6 @@ function DataTableInner<T>({
               Next
             </button>
           </div>
-
         </div>
       )}
     </div>

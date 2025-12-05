@@ -75,37 +75,9 @@ export default function IDCard() {
     <>
       {/* <AdminHeader /> */}
 
-      <section className="min-h-screen bg-gray-300 flex items-center justify-center py-10 space-x-3">
+      <section className="min-h-screen bg-gray-300 flex flex-col items-center justify-center py-10 space-y-6">
 
-        {/* CARD BACK */}
-        <div className="w-full h-82 max-w-lg bg-[#1a1a1a] rounded-3xl shadow-2xl overflow-hidden relative print:shadow-none flex flex-col items-center justify-center">
-
-          <div className="relative flex items-center justify-center w-full py-10">
-
-            <div className="absolute w-[250px] h-[250px] rounded-full bg-[#FF9800] ml-50 mt-30"></div>
-
-            <div className="absolute w-[200px] h-[200px] rounded-full bg-white shadow-xl flex items-center justify-center ml-50 mt-30">
-              {/* PROFILE IMAGE ON BACK */}
-              <div className="relative w-36 h-36 rounded-full overflow-hidden">
-                  <Image
-                  src="/images/logo.png"
-                  alt="Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full mb-20 bg-[#FF9800] h-10 flex pl-8 pt-2">
-            <p className="text-white font-semibold tracking-wide text-sm">
-              www.tathastuayurveda.world
-            </p>
-          </div>
-        </div>
-
-        {/* CARD FRONT */}
+        {/* CARD FRONT - TOP CARD */}
         <div className="w-full max-w-lg bg-[#1a1a1a] rounded-3xl shadow-2xl p-0 overflow-hidden relative print:shadow-none">
 
           <div className="relative flex">
@@ -147,6 +119,34 @@ export default function IDCard() {
           </div>
 
           <div className="w-full bg-[#FF9800] h-10 rounded-b-3xl"></div>
+        </div>
+
+        {/* CARD BACK - BOTTOM CARD */}
+        <div className="w-full max-w-lg bg-[#1a1a1a] rounded-3xl shadow-2xl overflow-hidden relative print:shadow-none flex flex-col items-center justify-center h-80">
+
+          <div className="relative flex items-center justify-center w-full py-10">
+
+            <div className="absolute w-[250px] h-[250px] rounded-full bg-[#FF9800] ml-50 mt-30"></div>
+
+            <div className="absolute w-[200px] h-[200px] rounded-full bg-white shadow-xl flex items-center justify-center ml-50 mt-30">
+              {/* PROFILE IMAGE ON BACK */}
+              <div className="relative w-36 h-36 rounded-full overflow-hidden">
+                  <Image
+                  src="/images/logo.png"
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full mb-20 bg-[#FF9800] h-10 flex pl-8 pt-2">
+            <p className="text-white font-semibold tracking-wide text-sm">
+              www.tathastuayurveda.world
+            </p>
+          </div>
         </div>
 
         <button

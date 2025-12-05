@@ -63,7 +63,7 @@ export default function EditProfilePage() {
   }, []);
 
   /* ==========================================================
-      ON INPUT CHANGE
+      HANDLE INPUT CHANGE
   ========================================================== */
   const handleChange = (e: any) => {
     setUser((prev: any) => ({
@@ -73,7 +73,7 @@ export default function EditProfilePage() {
   };
 
   /* ==========================================================
-      PROFILE IMAGE CHANGE
+      IMAGE CHANGE
   ========================================================== */
   const handleImageChange = (e: any) => {
     const file = e.target.files?.[0];
@@ -94,6 +94,9 @@ export default function EditProfilePage() {
       return toast.error("Enter a valid email");
 
     if (!user.phone.trim()) return toast.error("Phone number is required");
+    if (user.phone.length !== 10)
+      return toast.error("Phone number must be 10 digits");
+
     if (!user.address.trim()) return toast.error("Address is required");
 
     return true;
@@ -143,6 +146,9 @@ export default function EditProfilePage() {
     }
   };
 
+  /* ==========================================================
+      LOADING SCREEN
+  ========================================================== */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-green-700 text-lg">
@@ -151,22 +157,23 @@ export default function EditProfilePage() {
     );
   }
 
+  /* ==========================================================
+      JSX
+  ========================================================== */
   return (
     <section className="min-h-screen bg-gray-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-20">
       <div className="max-w-3xl mx-auto bg-white border rounded-xl shadow p-6 sm:p-8">
 
-        {/* TITLE */}
         <h2 className="text-xl sm:text-2xl font-semibold text-green-700 mb-6 text-center sm:text-left">
           Update Profile Information
         </h2>
 
-        {/* FORM */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 sm:grid-cols-2 gap-6"
         >
 
-          {/* PROFILE PHOTO */}
+          {/* PROFILE IMAGE */}
           <div className="col-span-1 sm:col-span-2 flex flex-col items-center">
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border shadow bg-gray-100 flex items-center justify-center">
               {previewImage ? (
@@ -184,7 +191,6 @@ export default function EditProfilePage() {
               )}
             </div>
 
-            {/* Choose file button */}
             <label
               htmlFor="profile_picture"
               className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition mt-3"
@@ -200,7 +206,6 @@ export default function EditProfilePage() {
               className="hidden"
             />
 
-            {/* File name */}
             {profileImageFile && (
               <p className="text-xs text-gray-600 mt-2 text-center">
                 Selected file:{" "}
@@ -209,13 +214,29 @@ export default function EditProfilePage() {
             )}
           </div>
 
-          {/* FORM INPUTS */}
-          <Input label="Full Name" name="name" value={user.name} onChange={handleChange} />
-          <Input label="Email Address" name="email" value={user.email} onChange={handleChange} />
-          <Input label="Phone Number" name="phone" value={user.phone} onChange={handleChange} />
-          <Input label="Address" name="address" value={user.address} onChange={handleChange} />
+          {/* INPUT FIELDS */}
+          <Input label="Full Name" name="name" value={user.name} onChange={handleChange} required />
 
-          {/* BUTTONS */}
+          <Input label="Email Address" name="email" value={user.email} onChange={handleChange} type="email" required />
+
+          <Input 
+            label="Phone Number" 
+            name="phone" 
+            value={user.phone}
+            type="text"
+            minLength={10}
+            maxLength={10}
+            required
+            onChange={(e: any) => {
+              if (/^\d*$/.test(e.target.value)) {
+                handleChange(e);
+              }
+            }}
+          />
+
+          <Input label="Address" name="address" value={user.address} onChange={handleChange} required />
+
+          {/* ACTION BUTTONS */}
           <div className="col-span-1 sm:col-span-2 flex flex-col sm:flex-row gap-4 mt-4">
             <button
               type="submit"
@@ -242,17 +263,20 @@ export default function EditProfilePage() {
 /* ==========================================================
     REUSABLE INPUT COMPONENT
 ========================================================== */
-
-function Input({ label, name, value, onChange, type = "text" }: any) {
+function Input({ label, name, value, onChange, type = "text", required = true, ...props }: any) {
   return (
     <div className="flex flex-col">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <label className="text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
 
       <input
         type={type}
         name={name}
         value={value}
         onChange={onChange}
+        required={required}
+        {...props}
         className="mt-1 px-3 py-2 border rounded bg-white text-sm focus:ring-2 focus:ring-green-500 outline-none"
       />
     </div>

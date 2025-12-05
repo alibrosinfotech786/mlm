@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ReloadLink from "../ReloadLink";
 
 export default function Sidebar({ isOpen, setIsOpen }: any) {
   const pathname = usePathname();
@@ -42,32 +43,25 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
   // Sidebar Menu List
   const navLinks = [
     { name: "Dashboard", module: "Dashboard", href: "/admin/dashboard" },
-    { name: "Manage Role", module: "Manage Role", href: "/admin/roles" },
-    { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
-    { name: "File Manager", module: "File Manager", href: "/admin/fileManager" },
 
-    {
-      name: "Masters",
-      items: [
-        { name: "Add State", module: "Add State", href: "/admin/masters/state" },
-        { name: "Add District", module: "Add District", href: "/admin/masters/district" },
-      ],
-    },
+    { name: "Manage Role", module: "Manage Role", href: "/admin/roles" },
+
+    { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
 
     {
       name: "Events",
       items: [
         { name: "Add Events", module: "Add Events", href: "/admin/events" },
-        { name: "Join Events", module: "Join Events", href: "/admin/events/joinEvents" },
-      ],
+        { name: "Join Events", module: "Join Events", href: "/admin/events/joinEvents" }
+      ]
     },
 
     {
       name: "Training",
       items: [
         { name: "Add Training", module: "Add Training", href: "/admin/training" },
-        { name: "Join Training", module: "Join Training", href: "/admin/training/joinTraining" },
-      ],
+        { name: "Join Training", module: "Join Training", href: "/admin/training/joinTraining" }
+      ]
     },
 
     {
@@ -92,9 +86,60 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
       ],
     },
 
+    {
+      name: "My Business",
+      items: [
+        { name: "Direct Business", module: "Direct Business", href: "/admin/myBusiness/directBusiness" },
+        { name: "Team Business", module: "Team Business", href: "/admin/myBusiness/teamBusiness" },
+        { name: "Business Summary", module: "Business Summary", href: "/admin/myBusiness/businessSummary" },
+      ],
+    },
+
+    {
+      name: "Wallet",
+      items: [
+        { name: "Wallet Request", module: "Wallet Request", href: "/admin/wallet/walletRequest" },
+        { name: "All Wallet Request", module: "All Wallet Request", href: "/admin/wallet/allWalletRequests" },
+        { name: "Wallet Status", module: "Wallet Status", href: "/admin/wallet/walletStatus" },
+        { name: "Wallet Summary", module: "Wallet Summary", href: "/admin/wallet/walletSummary" },
+        { name: "BV Summary", module: "BV Summary", href: "/admin/wallet/bvSummary" },
+      ],
+    },
+
+    {
+      name: "Orders",
+      items: [
+        { name: "Add Products", module: "Add Products", href: "/admin/products" },
+        { name: "All Orders", module: "All Orders", href: "/admin/orders/allOrders" },
+        { name: "Buy Products", module: "Buy Products", href: "/admin/orders/buyOrders" },
+        { name: "Orders Status", module: "Orders Status", href: "/admin/orders/orderStatus" },
+        { name: "Orders Summary", module: "Orders Summary", href: "/admin/orders/orderSummary" },
+      ],
+    },
+
+    {
+      name: "My Income",
+      items: [
+        { name: "Matching Income", module: "Matching Income", href: "/admin/Income/matchingIncome" },
+      ],
+    },
+
     { name: "Grievance", module: "Grievance", href: "/admin/grievance" },
     { name: "Contact Us", module: "ContactUS", href: "/admin/contactUs" },
   ];
+
+  // Filter navLinks based on permissions
+  const filteredNavLinks = navLinks.filter((link) => {
+    // For simple links, check if module exists and has read permission
+    if (!link.items) {
+      return hasReadPermission(link.module);
+    }
+
+    // For dropdowns, check if any sub-item has read permission
+    // Also check if parent dropdown itself has a permission (optional)
+    const visibleItems = link.items.filter((sub) => hasReadPermission(sub.module));
+    return visibleItems.length > 0;
+  });
 
   return (
     <>
@@ -106,25 +151,24 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
         />
       )}
 
-    <aside
-  className={cn(
-    "fixed inset-0 h-screen w-64 bg-green-700 text-white flex flex-col shadow-xl z-50 transform transition-transform duration-300",
-    isOpen ? "translate-x-0" : "-translate-x-full",
-    "md:translate-x-0 md:inset-auto md:top-0 md:left-0" // desktop fixes
-  )}
->
+      <aside
+        className={cn(
+          "fixed inset-0 h-screen w-64 bg-green-700 text-white flex flex-col shadow-xl z-50 transform transition-transform duration-300",
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          "md:translate-x-0 md:inset-auto md:top-0 md:left-0" // desktop fixes
+        )}
+      >
 
         <div className="p-5 text-2xl font-bold text-center border-b border-green-600">
           Tathastu Panel
         </div>
 
         <nav className="flex-1 mt-4 overflow-y-auto scrollbar-hide">
-          {navLinks.map((link) => {
+          {filteredNavLinks.map((link) => {
             if (!link.items) {
-              if (!hasReadPermission(link.module)) return null;
-
+              // Simple link - already filtered by hasReadPermission
               return (
-                <Link
+                <ReloadLink
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
@@ -134,14 +178,12 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
                   )}
                 >
                   {link.name}
-                </Link>
+                </ReloadLink>
               );
             }
 
-            const visibleItems = link.items.filter((s) =>
-              hasReadPermission(s.module)
-            );
-            if (visibleItems.length === 0) return null;
+            // Dropdown menu - items already filtered in filteredNavLinks
+            const visibleItems = link.items.filter((sub) => hasReadPermission(sub.module));
 
             return (
               <div key={link.name}>

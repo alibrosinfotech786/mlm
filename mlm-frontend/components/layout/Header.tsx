@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X, User } from "lucide-react";
+import ReloadLink from "../ReloadLink";
 
 const navItems = [
   { name: "Home", href: "/" },
@@ -46,7 +47,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-8">
           <nav className="flex items-center space-x-8">
             {navItems.map((item) => (
-              <Link
+              <ReloadLink
                 key={item.href}
                 href={item.href}
                 className={cn(
@@ -55,7 +56,7 @@ export default function Header() {
                 )}
               >
                 {item.name}
-              </Link>
+              </ReloadLink>
             ))}
           </nav>
 

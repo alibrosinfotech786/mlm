@@ -22,6 +22,9 @@ export default function EventsPage() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const [totalPages, setTotalPages] = useState(1);
+
+
     // Join Modal
     const [openJoinModal, setOpenJoinModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -47,12 +50,16 @@ export default function EventsPage() {
     async function fetchEvents() {
         try {
             setLoading(true);
-            const res = await axiosInstance.get(ProjectApiList.eventsList);
 
-            const eventsWithFlags = res.data.events.map((ev: any) => {
+            const res = await axiosInstance.get(
+                `${ProjectApiList.eventsList}?page=${page}&per_page=${entries}&search=${search}`
+            );
+
+            const payload = res.data.events;
+
+            const eventsWithFlags = (payload.data || []).map((ev: any) => {
                 const participants = ev.participants || [];
 
-                // Check if logged user has joined
                 const isJoined = participants.some(
                     (p: any) => String(p.user_id) === String(userId)
                 );
@@ -65,12 +72,17 @@ export default function EventsPage() {
             });
 
             setEvents(eventsWithFlags);
-            setLoading(false);
+            setPage(payload.current_page);
+            setEntries(Number(payload.per_page));
+            setTotalPages(payload.last_page || 1);
+
         } catch (err) {
-            setLoading(false);
             toast.error("Failed to fetch events");
         }
+
+        setLoading(false);
     }
+
 
     useEffect(() => {
         fetchEvents();
@@ -159,16 +171,16 @@ export default function EventsPage() {
     // =====================================================
     // SEARCH + PAGINATION
     // =====================================================
-    const filtered = events.filter(
-        (ev: any) =>
-            ev.city.toLowerCase().includes(search.toLowerCase()) ||
-            ev.state.toLowerCase().includes(search.toLowerCase()) ||
-            ev.leader.toLowerCase().includes(search.toLowerCase())
-    );
+    // const filtered = events.filter(
+    //     (ev: any) =>
+    //         ev.city.toLowerCase().includes(search.toLowerCase()) ||
+    //         ev.state.toLowerCase().includes(search.toLowerCase()) ||
+    //         ev.leader.toLowerCase().includes(search.toLowerCase())
+    // );
 
-    const totalPages = Math.ceil(filtered.length / entries);
-    const start = (page - 1) * entries;
-    const paginatedData = filtered.slice(start, start + entries);
+    // const totalPages = Math.ceil(filtered.length / entries);
+    // const start = (page - 1) * entries;
+    // const paginatedData = filtered.slice(start, start + entries);
 
     const handlePrev = () => setPage((p) => Math.max(p - 1, 1));
     const handleNext = () => setPage((p) => Math.min(p + 1, totalPages || 1));
@@ -187,7 +199,7 @@ export default function EventsPage() {
                     </div>
 
                     {/* EVENTS TABLE */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+                    {/* <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
                         <DataTable
                             columns={columns}
                             data={paginatedData}
@@ -202,7 +214,93 @@ export default function EventsPage() {
                             onNext={handleNext}
                             emptyMessage="No events found"
                         />
+                    </div> */}
+
+                    <div className="w-full overflow-x-auto rounded-lg border border-green-200 shadow-sm">
+                        <table className="min-w-full text-sm">
+                            {/* HEADER */}
+                            <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                                <tr>
+                                    {columns.map((col) => (
+                                        <th
+                                            key={col.key}
+                                            className="px-4 py-3 border-r border-green-500 text-left font-semibold"
+                                        >
+                                            {col.label}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+
+                            {/* BODY */}
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td
+                                            colSpan={columns.length}
+                                            className="text-center py-6 text-gray-600"
+                                        >
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                ) : events.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan={columns.length}
+                                            className="text-center py-6 text-gray-500"
+                                        >
+                                            {"No records found"}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    events.map((row, rowIndex) => (
+                                        <tr
+                                            key={rowIndex}
+                                            className="hover:bg-green-50 transition-colors border-b"
+                                        >
+                                            {columns.map((col) => (
+                                                <td
+                                                    key={col.key}
+                                                    className="px-4 py-3 border-r last:border-r-0"
+                                                >
+                                                    {col.render
+                                                        ? col.render(row[col.key], row, rowIndex)
+                                                        : row[col.key] ?? "-"}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                        <div className="p-4 border-t flex justify-between items-center">
+
+                            <button
+                                disabled={page === 1}
+                                onClick={() => setPage(page - 1)}
+                                className={`px-3 py-1 border rounded ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                                    }`}
+                            >
+                                Prev
+                            </button>
+
+                            <span className="text-sm font-medium">
+                                Page {page} of {totalPages}
+                            </span>
+
+                            <button
+                                disabled={page === totalPages}
+                                onClick={() => setPage(page + 1)}
+                                className={`px-3 py-1 border rounded ${page === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                                    }`}
+                            >
+                                Next
+                            </button>
+
+                        </div>
+
                     </div>
+
                 </div>
             </section>
 

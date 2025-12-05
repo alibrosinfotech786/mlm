@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 export default function TrainingsPage() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+
 
   const [openJoinModal, setOpenJoinModal] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
@@ -41,38 +43,44 @@ export default function TrainingsPage() {
   // =============================
   // FETCH TRAININGS
   // =============================
-  async function fetchTrainings() {
-    try {
-      setLoading(true);
+async function fetchTrainings() {
+  try {
+    setLoading(true);
 
-      const res = await axiosInstance.get(ProjectApiList.training);
+    const res = await axiosInstance.get(
+      `${ProjectApiList.training}?page=${page}&per_page=${entries}&search=${search}`
+    );
 
-      const trainingsWithFlags = res.data.trainings.map((t: any) => {
-        const participants = t.participants || [];
+    const payload = res.data.trainings;
 
-        // check if user joined
-        const isJoined = participants.some(
-          (p: any) => String(p.user_id) === String(userId)
-        );
+    const withFlags = payload.data.map((t: any) => {
+      const isJoined = (t.participants || []).some(
+        (p: any) => String(p.user_id) === String(userId)
+      );
+      return {
+        ...t,
+        participantsCount: t.participants?.length || 0,
+        isJoined,
+      };
+    });
 
-        return {
-          ...t,
-          participantsCount: participants.length,
-          isJoined,
-        };
-      });
+    setTrainings(withFlags);
 
-      setTrainings(trainingsWithFlags);
-      setLoading(false);
-    } catch (err) {
-      toast.error("Failed to load trainings");
-      setLoading(false);
-    }
+    setPage(payload.current_page);
+    setEntries(Number(payload.per_page));
+    setTotalPages(payload.last_page || 1);
+  } catch {
+    toast.error("Failed to load trainings");
+  } finally {
+    setLoading(false);
   }
+}
 
-  useEffect(() => {
-    fetchTrainings();
-  }, []);
+
+useEffect(() => {
+  fetchTrainings();
+}, [page, entries, search]);
+
 
   // =============================
   // JOIN TRAINING
@@ -150,15 +158,15 @@ export default function TrainingsPage() {
   // =============================
   // SEARCH + PAGINATION
   // =============================
-  const filtered = trainings.filter(
-    (t: any) =>
-      t.topic.toLowerCase().includes(search.toLowerCase()) ||
-      t.trainer.toLowerCase().includes(search.toLowerCase())
-  );
+  // const filtered = trainings.filter(
+  //   (t: any) =>
+  //     t.topic.toLowerCase().includes(search.toLowerCase()) ||
+  //     t.trainer.toLowerCase().includes(search.toLowerCase())
+  // );
 
-  const totalPages = Math.ceil(filtered.length / entries);
-  const start = (page - 1) * entries;
-  const paginatedData = filtered.slice(start, start + entries);
+  // const totalPages = Math.ceil(filtered.length / entries);
+  // const start = (page - 1) * entries;
+  // const paginatedData = filtered.slice(start, start + entries);
 
   return (
     <>
@@ -175,7 +183,7 @@ export default function TrainingsPage() {
           </div>
 
           {/* TABLE */}
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
               data={paginatedData}
@@ -190,7 +198,87 @@ export default function TrainingsPage() {
               onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
               emptyMessage="No trainings found"
             />
-          </div>
+          </div> */}
+
+        <div className="w-full overflow-x-auto rounded-lg border border-green-200 shadow-sm">
+  <table className="min-w-full text-sm">
+
+    {/* HEADER */}
+    <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+      <tr>
+        {columns.map((col) => (
+          <th
+            key={col.key}
+            className="px-4 py-3 border-r border-green-500 text-left font-semibold"
+          >
+            {col.label}
+          </th>
+        ))}
+      </tr>
+    </thead>
+
+    {/* BODY */}
+    <tbody>
+      {loading ? (
+        <tr>
+          <td colSpan={columns.length} className="text-center py-6 text-gray-600">
+            Loading...
+          </td>
+        </tr>
+      ) : trainings.length === 0 ? (
+        <tr>
+          <td colSpan={columns.length} className="py-6 text-center text-gray-500">
+            No trainings found
+          </td>
+        </tr>
+      ) : (
+        trainings.map((row, rowIndex) => (
+          <tr key={rowIndex} className="border-b hover:bg-green-50 transition-colors">
+            {columns.map((col) => (
+              <td key={col.key} className="px-4 py-3 border-r last:border-r-0">
+                {col.render
+                  ? col.render(row[col.key], row, rowIndex)
+                  : row[col.key] ?? "-"}
+              </td>
+            ))}
+          </tr>
+        ))
+      )}
+    </tbody>
+
+  </table>
+
+  {/* PAGINATION */}
+  <div className="p-4 border-t flex justify-between items-center">
+
+    <button
+      disabled={page === 1}
+      onClick={() => setPage(page - 1)}
+      className={`px-3 py-1 border rounded ${
+        page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+      }`}
+    >
+      Prev
+    </button>
+
+    <span className="text-sm font-medium">
+      Page {page} of {totalPages}
+    </span>
+
+    <button
+      disabled={page === totalPages}
+      onClick={() => setPage(page + 1)}
+      className={`px-3 py-1 border rounded ${
+        page === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+      }`}
+    >
+      Next
+    </button>
+
+  </div>
+</div>
+
+
         </div>
       </section>
 

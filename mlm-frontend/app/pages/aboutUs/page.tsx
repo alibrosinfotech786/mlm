@@ -14,6 +14,22 @@ import Footer from "@/components/layout/Footer";
 import PageHeader from "@/components/layout/PageHeader";
 
 export default function AboutUs() {
+
+    // ✅ APPLY HERE — FORCE RELOAD ON FIRST VISIT
+    const [reloaded, setReloaded] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!sessionStorage.getItem("aboutUsPageReloaded")) {
+            sessionStorage.setItem("aboutUsPageReloaded", "true");
+            window.location.reload();   // 🔥 Reload once
+        } else {
+            setReloaded(true);
+        }
+    }, []);
+
+    // Prevents showing page before reload completes
+    if (!reloaded) return null;
+    // ✅ STOP HERE
     return (
         <>
             <Header />
@@ -29,7 +45,7 @@ export default function AboutUs() {
                     {/* WHO WE ARE */}
                     <div className="p-5 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-sm bg-white border border-[#E7EFE5]">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2E522A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                            <FaLeaf className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" /> 
+                            <FaLeaf className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" />
                             Who We Are
                         </h2>
 
@@ -66,7 +82,7 @@ export default function AboutUs() {
                     {/* WHY WE EXIST */}
                     <div className="p-5 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-sm bg-white border border-[#E7EFE5]">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2E522A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                            <FaHandsHelping className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" /> 
+                            <FaHandsHelping className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" />
                             Why We Exist
                         </h2>
 
@@ -82,7 +98,7 @@ export default function AboutUs() {
                                 "A path to financial & personal freedom",
                             ].map((item, i) => (
                                 <li key={i} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     <span>{item}</span>
                                 </li>
                             ))}
@@ -96,7 +112,7 @@ export default function AboutUs() {
                     {/* MISSION */}
                     <div className="p-5 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-sm bg-white border border-[#E7EFE5]">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2E522A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                            <FaStar className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" /> 
+                            <FaStar className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" />
                             Our Mission
                         </h2>
 
@@ -114,7 +130,7 @@ export default function AboutUs() {
                                 "Enable stable daily income & long-term wealth",
                             ].map((item, i) => (
                                 <li key={i} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     <span>{item}</span>
                                 </li>
                             ))}
@@ -124,7 +140,7 @@ export default function AboutUs() {
                     {/* VISION */}
                     <div className="p-5 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-sm bg-white border border-[#E7EFE5]">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2E522A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                            <FaSpa className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" /> 
+                            <FaSpa className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" />
                             Our Vision
                         </h2>
 
@@ -141,7 +157,7 @@ export default function AboutUs() {
                                 "Success through ethics, service, and integrity",
                             ].map((v, i) => (
                                 <li key={i} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     <span>{v}</span>
                                 </li>
                             ))}
@@ -151,7 +167,7 @@ export default function AboutUs() {
                     {/* FOUNDATION */}
                     <div className="p-5 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-sm bg-white border border-[#E7EFE5]">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2E522A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                            <FaSeedling className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" /> 
+                            <FaSeedling className="text-[#6B8E62] w-5 h-5 sm:w-6 sm:h-6" />
                             Raman's Way Foundation
                         </h2>
 
@@ -168,7 +184,7 @@ export default function AboutUs() {
                                 "Personal transformation leaders",
                             ].map((v, i) => (
                                 <li key={i} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     <span>{v}</span>
                                 </li>
                             ))}
@@ -194,7 +210,7 @@ export default function AboutUs() {
                                 "Roadmap for global expansion",
                             ].map((v, i) => (
                                 <li key={i} className="flex gap-2 sm:gap-3 items-start text-sm sm:text-base">
-                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                    <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     <span>{v}</span>
                                 </li>
                             ))}
@@ -216,7 +232,7 @@ export default function AboutUs() {
                             {["Transparency", "Fairness", "Trust", "Growth", "Service"].map(
                                 (v, i) => (
                                     <li key={i} className="flex gap-2 sm:gap-3 items-start text-sm sm:text-base">
-                                        <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" /> 
+                                        <FaCheck className="text-[#6B8E62] mt-0.5 sm:mt-1 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                         <span>{v}</span>
                                     </li>
                                 )

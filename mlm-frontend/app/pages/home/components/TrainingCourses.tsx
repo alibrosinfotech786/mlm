@@ -32,7 +32,7 @@ const TrainingCourses = () => {
       const list = res.data.trainings || [];
 
       setTrainings(
-        list.map((t: any) => ({
+        list.data.map((t: any) => ({
           id: t.id,
           title: t.topic,
           description: t.description,

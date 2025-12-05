@@ -41,7 +41,7 @@ export default function EventListing() {
     try {
       setLoading(true);
       const res = await axiosInstance.get(ProjectApiList.eventsList);
-      setEvents(res.data.events || []);
+      setEvents(res.data.events?.data || []);
     } catch {
       toast.error("Failed to load events");
     } finally {

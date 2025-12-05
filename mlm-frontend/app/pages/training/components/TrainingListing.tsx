@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import JoinTrainingModal from "./JoinTrainingModal";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
@@ -12,6 +12,11 @@ import { useRouter } from "next/navigation";
 export default function TrainingListing() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Render counter (page load detector)
+  const renderCount = useRef(0);
+  renderCount.current++;
+  console.log("🔁 Page render count:", renderCount.current);
 
   // Join Modal State
   const [openJoinModal, setOpenJoinModal] = useState(false);
@@ -25,7 +30,7 @@ export default function TrainingListing() {
       setLoading(true);
 
       const res = await axiosInstance.get(ProjectApiList.training); // /api/trainings/list
-      setTrainings(res.data.trainings || []);
+      setTrainings(res.data.trainings?.data || []);
 
       setLoading(false);
     } catch (err) {
@@ -55,6 +60,8 @@ export default function TrainingListing() {
 
     router.push(`/admin/training/joinTraining?training_id=${selectedTraining.id}`);
   }
+
+  // console.log("pageload")
 
   return (
     <div className="container mx-auto px-6 md:px-12 lg:px-24 py-16">

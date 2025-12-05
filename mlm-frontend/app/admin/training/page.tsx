@@ -56,6 +56,9 @@ export default function TrainingsPage() {
   const [moduleInput, setModuleInput] = useState(""); // ⬅ for adding modules
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  const [totalPages, setTotalPages] = useState(1);
+
+
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(10);
   const [page, setPage] = useState(1);
@@ -66,14 +69,25 @@ export default function TrainingsPage() {
   async function fetchTrainings() {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(ProjectApiList.training);
 
-      const enhanced = res.data.trainings.map((t: any) => ({
+      const res = await axiosInstance.get(
+        `${ProjectApiList.training}?page=${page}&per_page=${entries}&search=${search}`
+      );
+
+      const payload = res.data.trainings;
+
+      const enhanced = (payload.data || []).map((t: any) => ({
         ...t,
         participantsCount: t?.participants?.length || 0,
       }));
 
       setTrainings(enhanced);
+
+      // Update pagination
+      setPage(payload.current_page);
+      setEntries(Number(payload.per_page));
+      setTotalPages(payload.last_page || 1);
+
     } catch {
       toast.error("Failed to load trainings");
     } finally {
@@ -81,9 +95,10 @@ export default function TrainingsPage() {
     }
   }
 
+
   useEffect(() => {
     fetchTrainings();
-  }, []);
+  }, [page, entries, search]);
 
   /*============ ADD MODULE ============*/
   function addModule() {
@@ -298,16 +313,16 @@ export default function TrainingsPage() {
     },
   ];
 
-  const filtered = trainings.filter((t: any) =>
-    t.topic.toLowerCase().includes(search.toLowerCase())
-  );
+  // const filtered = trainings.filter((t: any) =>
+  //   t.topic.toLowerCase().includes(search.toLowerCase())
+  // );
 
-  const totalPages = Math.ceil(filtered.length / entries);
+  // const totalPages = Math.ceil(filtered.length / entries);
 
-  const paginatedData = filtered.slice(
-    (page - 1) * entries,
-    (page - 1) * entries + entries
-  );
+  // const paginatedData = filtered.slice(
+  //   (page - 1) * entries,
+  //   (page - 1) * entries + entries
+  // );
 
   return (
     <>
@@ -427,7 +442,7 @@ export default function TrainingsPage() {
           </div>
 
           {/* TABLE */}
-          <DataTable
+          {/* <DataTable
             columns={columns}
             data={paginatedData}
             loading={loading}
@@ -440,8 +455,95 @@ export default function TrainingsPage() {
             onPrevious={() => setPage(Math.max(1, page - 1))}
             onNext={() => setPage(Math.min(totalPages, page + 1))}
             emptyMessage="No trainings found"
-          />
+          /> */}
+
+          <div className="w-full overflow-x-auto rounded-lg border border-green-200 shadow-sm">
+            <table className="min-w-full text-sm">
+              {/* HEADER */}
+              <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                <tr>
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className="px-4 py-3 border-r border-green-500 text-left font-semibold"
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {/* BODY */}
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="py-6 text-center text-gray-600"
+                    >
+                      Loading...
+                    </td>
+                  </tr>
+                ) : trainings.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="py-6 text-center text-gray-500"
+                    >
+                      {"No records found"}
+                    </td>
+                  </tr>
+                ) : (
+                  trainings.map((row, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      className="border-b hover:bg-green-50 transition-colors"
+                    >
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          className="px-4 py-3 border-r last:border-r-0"
+                        >
+                          {col.render
+                            ? col.render(row[col.key], row, rowIndex)
+                            : row[col.key] ?? "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="p-4 border-t flex justify-between items-center">
+
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className={`px-3 py-1 border rounded ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                  }`}
+              >
+                Prev
+              </button>
+
+              <span className="text-sm font-medium">
+                Page {page} of {totalPages}
+              </span>
+
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+                className={`px-3 py-1 border rounded ${page === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-green-100"
+                  }`}
+              >
+                Next
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
+
       </section>
 
       {/* ============================================

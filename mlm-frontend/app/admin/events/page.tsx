@@ -38,6 +38,14 @@ export default function EventsPage() {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
 
+  const [createLoading, setCreateLoading] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [totalPages, setTotalPages] = useState(1);
+
+
+
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   const [form, setForm] = useState<any>({
@@ -65,13 +73,25 @@ export default function EventsPage() {
   async function fetchEvents() {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(ProjectApiList.eventsList);
-      setEvents(res.data.events || []);
-    } catch {
+
+      const res = await axiosInstance.get(
+        `${ProjectApiList.eventsList}?page=${page}&per_page=${entries}&search=${search}`
+      );
+
+      const payload = res.data.events;
+
+      setEvents(payload.data || []);
+      setPage(payload.current_page);
+      setEntries(Number(payload.per_page));
+      setTotalPages(payload.last_page || 1);
+
+    } catch (err) {
       toast.error("Failed to fetch events");
     }
+
     setLoading(false);
   }
+
 
   useEffect(() => {
     fetchEvents();
@@ -97,6 +117,7 @@ export default function EventsPage() {
   // ====================
   async function handleCreateEvent(e: any) {
     e.preventDefault();
+    setCreateLoading(true);
 
     const fd = new FormData();
     Object.keys(form).forEach((key) => {
@@ -116,7 +137,10 @@ export default function EventsPage() {
     } catch {
       toast.error("Failed to create event");
     }
+
+    setCreateLoading(false);
   }
+
 
   // ====================
   // EDIT EVENT
@@ -148,6 +172,7 @@ export default function EventsPage() {
   // ====================
   async function handleUpdateEvent(e: any) {
     e.preventDefault();
+    setUpdateLoading(true);
 
     const fd = new FormData();
     Object.keys(form).forEach((key) => {
@@ -166,12 +191,17 @@ export default function EventsPage() {
     } catch {
       toast.error("Failed to update event");
     }
+
+    setUpdateLoading(false);
   }
+
 
   // ====================
   // DELETE EVENT
   // ====================
   async function handleDeleteEvent() {
+    setDeleteLoading(true);
+
     try {
       await axiosInstance.post(ProjectApiList.deleteEvent, {
         id: selectedEvent.id,
@@ -184,6 +214,8 @@ export default function EventsPage() {
     } catch {
       toast.error("Failed to delete event");
     }
+
+    setDeleteLoading(false);
   }
 
   function resetForm() {
@@ -280,17 +312,17 @@ export default function EventsPage() {
     },
   ];
 
-  const filtered = events.filter(
-    (ev: any) =>
-      ev.city.toLowerCase().includes(search.toLowerCase()) ||
-      ev.state.toLowerCase().includes(search.toLowerCase()) ||
-      ev.leader.toLowerCase().includes(search.toLowerCase()) ||
-      ev.venue.toLowerCase().includes(search.toLowerCase())
-  );
+  // const filtered = events.filter(
+  //   (ev: any) =>
+  //     ev.city.toLowerCase().includes(search.toLowerCase()) ||
+  //     ev.state.toLowerCase().includes(search.toLowerCase()) ||
+  //     ev.leader.toLowerCase().includes(search.toLowerCase()) ||
+  //     ev.venue.toLowerCase().includes(search.toLowerCase())
+  // );
 
-  const totalPages = Math.ceil(filtered.length / entries);
-  const start = (page - 1) * entries;
-  const paginatedData = filtered.slice(start, start + entries);
+  // const totalPages = Math.ceil(filtered.length / entries);
+  // const start = (page - 1) * entries;
+  // const paginatedData = filtered.slice(start, start + entries);
 
   return (
     <>
@@ -345,7 +377,10 @@ export default function EventsPage() {
                   </div>
 
                   <DialogFooter>
-                    <Button type="submit">Create</Button>
+                    <Button type="submit" disabled={createLoading}>
+                      {createLoading ? "Creating..." : "Create"}
+                    </Button>
+
                     <DialogClose asChild>
                       <Button variant="outline">Cancel</Button>
                     </DialogClose>
@@ -388,7 +423,10 @@ export default function EventsPage() {
                 </div>
 
                 <DialogFooter>
-                  <Button type="submit">Update</Button>
+                  <Button type="submit" disabled={updateLoading}>
+                    {updateLoading ? "Updating..." : "Update"}
+                  </Button>
+
                   <DialogClose asChild>
                     <Button variant="outline">Cancel</Button>
                   </DialogClose>
@@ -407,9 +445,14 @@ export default function EventsPage() {
               <p>Are you sure you want to delete this event?</p>
 
               <DialogFooter>
-                <Button className="bg-red-600 text-white" onClick={handleDeleteEvent}>
-                  Delete
+                <Button
+                  className="bg-red-600 text-white"
+                  onClick={handleDeleteEvent}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? "Deleting..." : "Delete"}
                 </Button>
+
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
@@ -418,22 +461,88 @@ export default function EventsPage() {
           </Dialog>
 
           {/* DATA TABLE */}
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
-            <DataTable
-              columns={columns}
-              data={paginatedData}
-              loading={loading}
-              search={search}
-              onSearchChange={setSearch}
-              entries={entries}
-              onEntriesChange={setEntries}
-              page={page}
-              totalPages={totalPages}
-              onPrevious={() => setPage(Math.max(page - 1, 1))}
-              onNext={() => setPage(Math.min(page + 1, totalPages))}
-              emptyMessage="No events found"
-            />
+          <div className="w-full overflow-x-auto rounded-lg border border-green-200 shadow-sm">
+            <table className="min-w-full text-sm">
+              {/* HEADER */}
+              <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+                <tr>
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className="px-4 py-3 border-r border-green-500 text-left font-semibold"
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {/* BODY */}
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="text-center py-6 text-gray-600"
+                    >
+                      Loading...
+                    </td>
+                  </tr>
+                ) : events.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="text-center py-6 text-gray-500"
+                    >
+                      {"No records found"}
+                    </td>
+                  </tr>
+                ) : (
+                  events.map((row, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      className="hover:bg-green-50 transition-colors border-b"
+                    >
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          className="px-4 py-3 border-r last:border-r-0"
+                        >
+                          {col.render
+                            ? col.render(row[col.key], row, rowIndex)
+                            : row[col.key] ?? "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+
+            </table>
+            <div className="p-4 border-t flex justify-between items-center">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className="px-3 py-1 border rounded"
+              >
+                Prev
+              </button>
+
+              <span className="text-sm">
+                Page {page} of {totalPages}
+              </span>
+
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+                className="px-3 py-1 border rounded"
+              >
+                Next
+              </button>
+            </div>
+
           </div>
+
         </div>
       </section>
     </>
@@ -458,7 +567,7 @@ function InputBox({ label, type, name, form, setForm, min }: any) {
 
 function ImageUpload({ label, preview, onChange }: any) {
 
-  console.log(preview,"preview---------------->")
+  console.log(preview, "preview---------------->")
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm font-medium text-gray-700">{label}</label>

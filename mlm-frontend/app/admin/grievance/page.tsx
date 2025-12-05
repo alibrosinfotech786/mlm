@@ -416,7 +416,7 @@ export default function GrievancePage() {
 
           </div>
 
-          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
             <DataTable
               columns={columns}
               data={grievances}
@@ -437,7 +437,220 @@ export default function GrievancePage() {
               onNext={handleNext}
               emptyMessage="No grievances found"
             />
+          </div> */}
+
+          {/* CUSTOM GRIEVANCE TABLE */}
+          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+
+            {/* 🔍 SEARCH + ENTRIES */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search grievance..."
+                className="border px-3 py-2 rounded-md w-72 text-sm"
+              />
+
+              <div className="flex items-center gap-2 text-sm">
+                <span>Show</span>
+                <select
+                  value={entries}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                </select>
+                <span>entries</span>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-green-600 text-white uppercase text-xs">
+                  <tr>
+                    <th className="px-4 py-3 border-r">Date</th>
+                    <th className="px-4 py-3 border-r">User</th>
+                    <th className="px-4 py-3 border-r">Grievance ID</th>
+                    <th className="px-4 py-3 border-r">Subject</th>
+                    <th className="px-4 py-3 border-r">Description</th>
+                    <th className="px-4 py-3 border-r">Attachment</th>
+                    <th className="px-4 py-3">Status / Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center">Loading...</td>
+                    </tr>
+                  ) : grievances.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-gray-500">
+                        No grievances found
+                      </td>
+                    </tr>
+                  ) : (
+                    grievances.map((row) => (
+                      <tr key={row.id} className="border-b hover:bg-green-50">
+
+                        {/* DATE */}
+                        <td className="px-4 py-3 border-r">
+                          {formatPrettyDate(row.created_at)}
+                        </td>
+
+                        {/* USER */}
+                        <td className="px-4 py-3 border-r">{row.user_name}</td>
+
+                        {/* GRIEVANCE ID */}
+                        <td className="px-4 py-3 border-r">{row.grievance_id || "-"}</td>
+
+                        {/* SUBJECT */}
+                        <td className="px-4 py-3 border-r">{row.subject}</td>
+
+                        {/* DESCRIPTION */}
+                        <td className="px-4 py-3 border-r">
+                          <p className="max-w-[200px] truncate" title={row.description}>
+                            {row.description}
+                          </p>
+                        </td>
+
+                        {/* ATTACHMENT */}
+                        <td className="px-4 py-3 border-r">
+                          {row.attachment ? (
+                            <button
+                              onClick={() => openView(row.id)}
+                              className="text-green-700 underline"
+                            >
+                              View
+                            </button>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        {/* STATUS + ACTIONS */}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-2">
+
+                            {/* STATUS DROPDOWN */}
+                            {isAdmin ? (
+                              <select
+                                value={row.status}
+                                onChange={(e) =>
+                                  handleStatusUpdate(row.id, e.target.value)
+                                }
+                                className={`px-2 py-1 text-xs rounded border ${row.status === "resolved"
+                                    ? "bg-green-100 border-green-300 text-green-800"
+                                    : row.status === "in_progress"
+                                      ? "bg-yellow-100 border-yellow-300 text-yellow-800"
+                                      : "bg-gray-100 border-gray-300 text-gray-700"
+                                  }`}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="closed">Closed</option>
+                              </select>
+                            ) : (
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold text-center ${row.status === "resolved"
+                                    ? "bg-green-100 text-green-700"
+                                    : row.status === "in_progress"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-gray-100 text-gray-700"
+                                  }`}
+                              >
+                                {row.status.replace("_", " ").toUpperCase()}
+                              </span>
+                            )}
+
+                            {/* ACTION BUTTONS */}
+                            <div className="flex items-center gap-3">
+
+                              {/* VIEW */}
+                              <button
+                                onClick={() => openView(row.id)}
+                                className="text-blue-600 text-xs hover:underline"
+                              >
+                                Details
+                              </button>
+
+                              {/* EDIT (User only) */}
+                              {!isAdmin && (
+                                <button
+                                  onClick={() => openEdit(row.id)}
+                                  className="text-indigo-600 text-xs hover:underline"
+                                >
+                                  Edit
+                                </button>
+                              )}
+
+                              {/* DELETE (User only) */}
+                              {!isAdmin && (
+                                <button
+                                  onClick={() => handleDelete(row.id)}
+                                  className="text-red-600 text-xs hover:underline"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="p-4 border-t flex justify-between items-center">
+
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className={`px-3 py-1 border rounded ${page === 1 ? "opacity-50" : "hover:bg-green-100"
+                  }`}
+              >
+                Prev
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setPage(num)}
+                    className={`px-3 py-1 border rounded ${num === page ? "bg-green-600 text-white" : "hover:bg-green-100"
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+                className={`px-3 py-1 border rounded ${page === totalPages ? "opacity-50" : "hover:bg-green-100"
+                  }`}
+              >
+                Next
+              </button>
+
+            </div>
           </div>
+
         </div>
       </section>
 

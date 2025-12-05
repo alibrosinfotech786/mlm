@@ -320,87 +320,119 @@ export default function ProductsPage() {
           </div>
 
           {/* TABLE */}
-          <div className="bg-white rounded-xl shadow-md border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-green-100 text-green-800">
-                <tr>
-                  <th className="p-3 border">Image</th>
-                  <th className="p-3 border">Name</th>
-                  <th className="p-3 border">Category</th>
-                  <th className="p-3 border">MRP</th>
-                  <th className="p-3 border">BV</th>
-                  <th className="p-3 border">Stock</th>
-                  <th className="p-3 border">Description</th>
-                  <th className="p-3 border">Actions</th>
-                </tr>
-              </thead>
+          <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
 
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center p-6">Loading...</td></tr>
-                ) : products.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center p-6">No products found</td></tr>
+  {/* TABLE WRAPPER */}
+  <div className="overflow-x-auto">
+    <table className="min-w-full text-sm">
+      
+      {/* HEADER */}
+      <thead className="bg-green-600 text-white uppercase text-xs tracking-wide sticky top-0 z-10">
+        <tr>
+          <th className="px-4 py-3 border-r">Image</th>
+          <th className="px-4 py-3 border-r">Name</th>
+          <th className="px-4 py-3 border-r">Category</th>
+          <th className="px-4 py-3 border-r">MRP</th>
+          <th className="px-4 py-3 border-r">BV</th>
+          <th className="px-4 py-3 border-r">Stock</th>
+          <th className="px-4 py-3 border-r">Description</th>
+          <th className="px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+
+      {/* BODY */}
+      <tbody>
+        {loading ? (
+          <tr>
+            <td colSpan={8} className="py-6 text-center text-gray-500">
+              Loading products...
+            </td>
+          </tr>
+        ) : products.length === 0 ? (
+          <tr>
+            <td colSpan={8} className="py-6 text-center text-gray-500">
+              No products found
+            </td>
+          </tr>
+        ) : (
+          products.map((p) => (
+            <tr key={p.id} className="border-b hover:bg-green-50">
+
+              {/* IMAGE */}
+              <td className="px-4 py-3 border-r text-center">
+                {p.image ? (
+                  <Image
+                    src={buildImageUrl(p.image) ?? "/no-img.png"}
+                    width={50}
+                    height={50}
+                    alt="product"
+                    className="rounded border object-contain mx-auto"
+                    unoptimized
+                  />
                 ) : (
-                  products.map((p) => (
-                    <tr key={p.id} className="hover:bg-green-50">
-
-                      {/* Image */}
-                      <td className="p-2 border text-center">
-                        {p.image ? (
-                          <Image
-                            src={buildImageUrl(p.image) ?? "/no-img.png"}
-                            width={50}
-                            height={50}
-                            alt="product"
-                            className="rounded border object-contain"
-                            unoptimized
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">No Image</span>
-                        )}
-                      </td>
-
-                      <td className="p-2 border">{p.name}</td>
-                      <td className="p-2 border">{p.category}</td>
-                      <td className="p-2 border">₹{p.mrp}</td>
-                      <td className="p-2 border">{p.bv}</td>
-                      <td className="p-2 border">
-                        {p.stock ? (
-                          <span className="text-green-700 font-semibold">In Stock</span>
-                        ) : (
-                          <span className="text-red-600 font-semibold">Out of Stock</span>
-                        )}
-                      </td>
-
-                      <td className="p-2 border">{p.description}</td>
-
-                      <td className="p-2 border">
-                        <div className="flex flex-col gap-1 text-sm">
-                          <button
-                            className="text-blue-600 hover:underline"
-                            onClick={() => openEdit(p)}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            className="text-red-600 hover:underline"
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setOpenDeleteModal(true);
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-
-                    </tr>
-                  ))
+                  <span className="text-xs text-gray-400">No Image</span>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </td>
+
+              {/* NAME */}
+              <td className="px-4 py-3 border-r font-medium">
+                <span className="line-clamp-1">{p.name}</span>
+              </td>
+
+              {/* CATEGORY */}
+              <td className="px-4 py-3 border-r">{p.category}</td>
+
+              {/* PRICE */}
+              <td className="px-4 py-3 border-r font-semibold">₹{p.mrp}</td>
+
+              {/* BV */}
+              <td className="px-4 py-3 border-r">{p.bv}</td>
+
+              {/* STOCK */}
+              <td className="px-4 py-3 border-r">
+                {p.stock ? (
+                  <span className="text-green-700 font-semibold">In Stock</span>
+                ) : (
+                  <span className="text-red-600 font-semibold">Out of Stock</span>
+                )}
+              </td>
+
+              {/* DESCRIPTION */}
+              <td className="px-4 py-3 border-r max-w-[180px]">
+                <span className="line-clamp-2 text-gray-700">{p.description}</span>
+              </td>
+
+              {/* ACTIONS */}
+              <td className="px-4 py-3">
+                <div className="flex flex-col gap-1 text-sm">
+                  <button
+                    className="text-blue-600 hover:underline"
+                    onClick={() => openEdit(p)}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    className="text-red-600 hover:underline"
+                    onClick={() => {
+                      setSelectedProduct(p);
+                      setOpenDeleteModal(true);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
         </div>
       </section>
 
