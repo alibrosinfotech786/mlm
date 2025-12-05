@@ -10,12 +10,16 @@ use Exception;
 
 class TrainingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $perPage = $request->get('per_page', 10);
+            $perPage = in_array($perPage, [5, 10, 15, 20, 25, 50]) ? $perPage : 10;
+            
             $trainings = Training::with(['participants' => function($query) {
                 $query->select('users.id', 'users.user_id', 'users.name', 'users.email', 'users.phone');
-            }])->get();
+            }])->paginate($perPage);
+            
             return response()->json([
                 'success' => true,
                 'trainings' => $trainings

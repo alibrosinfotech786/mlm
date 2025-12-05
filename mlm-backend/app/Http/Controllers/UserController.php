@@ -55,7 +55,6 @@ class UserController extends Controller
                 'name' => 'string|max:255',
                 'email' => 'string|email|max:255|unique:users,email,' . $request->id,
                 'phone' => 'string|max:15',
-                'address' => 'string',
                 'sponsor_id' => 'nullable|exists:users,user_id',
                 'sponsor_name' => 'nullable|string|max:255',
                 'root_id' => 'nullable|exists:users,user_id',
@@ -82,7 +81,7 @@ class UserController extends Controller
                 }
             }
             
-            $data = $request->only(['name', 'email', 'phone', 'address', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role', 'isActive']);
+            $data = $request->only(['name', 'email', 'phone', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role', 'isActive']);
             
             if ($request->password) {
                 $data['password'] = Hash::make($request->password);
