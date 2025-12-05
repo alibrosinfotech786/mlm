@@ -7,8 +7,7 @@ use App\Models\Role;
 use App\Mail\WelcomeEmail;
 use App\Mail\WelcomeLetterEmail;
 use App\Mail\IdCardEmail;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -314,18 +313,21 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
-            // Render welcome letter HTML into PDF using Dompdf
-            $html = view('emails.welcome-letter', ['user' => $user])->render();
+            // Use remote URLs for images - DomPDF can load them with isRemoteEnabled = true
+            $backgroundImagePath = 'https://trust.alibrosinfotech.com/_next/static/media/welcomeletter.4e713bec.jpg';
+            $logoPath = 'https://trust.alibrosinfotech.com/images/logo.png';
 
-            $options = new Options();
-            $options->set('isRemoteEnabled', true);
-
-            $dompdf = new Dompdf($options);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            $pdfData = $dompdf->output();
+            // Generate PDF using PdfService
+            $pdfService = new PdfService();
+            $pdfData = $pdfService->generateFromView('emails.welcome-letter', [
+                'user' => $user,
+                'backgroundImagePath' => $backgroundImagePath,
+                'logoPath' => $logoPath
+            ], [
+                'isRemoteEnabled' => true,
+                'paper' => 'A4',
+                'orientation' => 'portrait'
+            ]);
 
             // Send welcome letter email with PDF attachment
             Mail::to($user->email)->send(new WelcomeLetterEmail($user, $pdfData));
@@ -335,6 +337,8 @@ class AuthController extends Controller
                 'message' => 'Welcome letter sent successfully to ' . $user->email
             ]);
         } catch (Exception $e) {
+            \Log::error('sendWelcomeLetter error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'error_type' => 'EMAIL_SEND_ERROR',
@@ -361,21 +365,16 @@ class AuthController extends Controller
                 }
             }
 
-            // Render ID card view into PDF using Dompdf directly
-            $html = view('emails.id-card-attachment', [
+            // Generate PDF using PdfService
+            $pdfService = new PdfService();
+            $pdfData = $pdfService->generateFromView('emails.id-card-attachment', [
                 'user' => $user,
                 'profilePictureBase64' => $profilePictureBase64
-            ])->render();
-
-            $options = new Options();
-            $options->set('isRemoteEnabled', true);
-
-            $dompdf = new Dompdf($options);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            $pdfData = $dompdf->output();
+            ], [
+                'isRemoteEnabled' => true,
+                'paper' => 'A4',
+                'orientation' => 'portrait'
+            ]);
 
             Mail::to($user->email)->send(new IdCardEmail($user, $pdfData));
 
