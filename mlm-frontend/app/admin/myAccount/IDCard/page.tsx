@@ -11,6 +11,7 @@ import { Phone, Mail, User, Globe } from "lucide-react";
 export default function IDCard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -62,6 +63,31 @@ export default function IDCard() {
 
     loadUser();
   }, []);
+
+  const handleSendEmail = async () => {
+    try {
+      setSendingEmail(true);
+      const token = localStorage.getItem("token");
+
+      const res = await axiosInstance.post(
+        ProjectApiList.SEND_ID_CARD,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res?.data?.success) {
+        toast.success("ID Card sent successfully to your email!");
+      } else {
+        toast.error("Failed to send ID Card");
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Error sending ID Card");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -149,18 +175,32 @@ export default function IDCard() {
           </div>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="
-            fixed bottom-6 right-6
-            bg-green-600 text-white 
-            px-5 py-2 rounded shadow 
-            hover:bg-green-700 transition 
-            font-medium print:hidden cursor-pointer
-          "
-        >
-          🖨️ Print
-        </button>
+        <div className="fixed bottom-6 right-6 flex gap-3 print:hidden">
+          <button
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+            className="
+              bg-blue-600 text-white 
+              px-5 py-2 rounded shadow 
+              hover:bg-blue-700 transition 
+              font-medium cursor-pointer
+              disabled:bg-gray-400 disabled:cursor-not-allowed
+            "
+          >
+            {sendingEmail ? "Sending..." : "📧 Send Email"}
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="
+              bg-green-600 text-white 
+              px-5 py-2 rounded shadow 
+              hover:bg-green-700 transition 
+              font-medium cursor-pointer
+            "
+          >
+            🖨️ Print
+          </button>
+        </div>
       </section>
     </>
   );

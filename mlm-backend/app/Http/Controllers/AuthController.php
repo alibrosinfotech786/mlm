@@ -563,11 +563,15 @@ class AuthController extends Controller
                 }
             }
 
+            // Logo URL for the back side of ID card
+            $logoUrl = 'https://www.tathastuayurveda.world/images/logo.png';
+
             // Generate PDF using PdfService
             $pdfService = new PdfService();
             $pdfData = $pdfService->generateFromView('emails.id-card-attachment', [
                 'user' => $user,
-                'profilePictureBase64' => $profilePictureBase64
+                'profilePictureBase64' => $profilePictureBase64,
+                'logoUrl' => $logoUrl
             ], [
                 'isRemoteEnabled' => true,
                 'paper' => 'A4',
@@ -581,6 +585,8 @@ class AuthController extends Controller
                 'message' => 'ID Card sent successfully to ' . $user->email,
             ]);
         } catch (Exception $e) {
+            \Log::error('sendIdCard error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'error_type' => 'ID_CARD_EMAIL_ERROR',
