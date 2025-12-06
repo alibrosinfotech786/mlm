@@ -147,7 +147,7 @@ export default function ProfilePage() {
               <InfoRow label="Phone Number" value={user.phone} />
               <InfoRow label="Address" value={user.address || "N/A"} />
               <InfoRow label="Nominee" value={user.nominee || "N/A"} />
-              <InfoRow label="Rank" value={user.rank} />
+              {/* <InfoRow label="Rank" value={user.rank} /> */}
               <InfoRow label="Package" value={user.package} />
               <InfoRow label="BV" value={user.bv} />
             </InfoCard>
