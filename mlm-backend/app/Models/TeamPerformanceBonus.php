@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class MatchingIncomeReport extends Model
+class TeamPerformanceBonus extends Model
 {
     protected $table = 'team_performance_bonuses';
     

@@ -77,7 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/mlm-hierarchy-list', [UserController::class, 'getMlmHierarchyList']);
     Route::get('/users/sponsored-users', [UserController::class, 'getSponsoredUsers']);
     Route::get('/users/level-bonus', [UserController::class, 'calculateLevelBonus']);
-    Route::post('/users/process-level-bonus', [UserController::class, 'processLevelBonus']);
+    Route::post('/users/process-level-bonus', [UserController::class, 'processLevelBonus']); #sponser royality income
     Route::get('/users/mlm-structure', [UserController::class, 'getMlmStructure']);
     Route::get('/users/available-positions', [UserController::class, 'getAvailablePosition']);
     Route::get('/users/bonus-received', [UserController::class, 'getBonusReceived']);
@@ -91,6 +91,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user_id}/level-bonus-reports', [UserController::class, 'getUserLevelBonusReports']);
     Route::get('/users/matching-income-reports', [UserController::class, 'getMatchingIncomeReports']);
     Route::get('/users/{user_id}/matching-income-reports', [UserController::class, 'getUserMatchingIncomeReports']);
+    Route::get('/users/next-team-performance-bonus', [UserController::class, 'calculateTeamPerformanceBonus']);
+    Route::post('/users/process-team-performance-bonus', [UserController::class, 'processTeamPerformanceBonus']);
+    Route::get('/users/team-performance-bonuses', [UserController::class, 'getTeamPerformanceBonuses']);
 
     // KYC routes
     Route::get('/kyc', [KycController::class, 'index']);

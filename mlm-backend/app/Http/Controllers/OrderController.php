@@ -368,27 +368,40 @@ class OrderController extends Controller
                 
                 $user->updateStatusBasedOnBv();
                 
-                // Credit sponsor with 10% of total BV when user becomes active (reaches 1000 BV)
+                // Credit sponsor wallet with 10% of total BV when user becomes active (reaches 1000 BV)
                 if ($user->sponsor_id && !$wasActive && $user->isActive && $user->bv >= 1000) {
                     $sponsor = User::where('user_id', $user->sponsor_id)->first();
                     if ($sponsor) {
                         $referralBonus = $user->bv * 0.10;
-                        $sponsorOldBv = $sponsor->bv;
-                        $sponsor->increment('bv', $referralBonus);
+                        $previousBalance = $sponsor->wallet_balance;
+                        
+                        $sponsor->increment('wallet_balance', $referralBonus);
                         $sponsor->refresh();
                         
-                        // Log sponsor BV history
-                        BvHistory::create([
+                        // Create wallet transaction record
+                        \App\Models\WalletTransaction::create([
                             'user_id' => $sponsor->user_id,
-                            'previous_bv' => $sponsorOldBv,
-                            'bv_change' => $referralBonus,
-                            'new_bv' => $sponsor->bv,
-                            'type' => 'credit',
-                            'reason' => 'referral_bonus',
-                            'reference_id' => $user->user_id,
+                            'deposit_by' => 'SYSTEM',
+                            'deposit_to' => $sponsor->user_id,
+                            'deposit_amount' => $referralBonus,
+                            'ref_transaction_id' => $user->user_id,
+                            'remark' => 'Referral bonus from ' . $user->name . ' (' . $user->user_id . ')',
+                            'status' => 'approved',
+                            'status_updated_by' => 'SYSTEM',
+                            'status_updated_at' => now()
                         ]);
                         
-                        $sponsor->updateStatusBasedOnBv();
+                        // Create wallet history record
+                        \App\Models\WalletHistory::create([
+                            'user_id' => $sponsor->user_id,
+                            'transaction_id' => 'REF' . time() . rand(100, 999),
+                            'previous_balance' => $previousBalance,
+                            'amount_change' => $referralBonus,
+                            'new_balance' => $sponsor->wallet_balance,
+                            'type' => 'credit',
+                            'reason' => 'Referral bonus from ' . $user->name . ' (' . $user->user_id . ')',
+                            'reference_transaction_id' => $user->user_id
+                        ]);
                     }
                 }
             }
@@ -415,27 +428,40 @@ class OrderController extends Controller
                 
                 $user->updateStatusBasedOnBv();
                 
-                // Subtract referral bonus from sponsor if user becomes inactive again
+                // Subtract referral bonus from sponsor wallet if user becomes inactive again
                 if ($user->sponsor_id && $wasActive && !$user->isActive && $user->bv < 1000) {
                     $sponsor = User::where('user_id', $user->sponsor_id)->first();
                     if ($sponsor) {
                         $referralBonus = ($user->bv + $order->total_bv) * 0.10;
-                        $sponsorOldBv = $sponsor->bv;
-                        $sponsor->decrement('bv', $referralBonus);
+                        $previousBalance = $sponsor->wallet_balance;
+                        
+                        $sponsor->decrement('wallet_balance', $referralBonus);
                         $sponsor->refresh();
                         
-                        // Log sponsor BV history
-                        BvHistory::create([
+                        // Create wallet transaction record
+                        \App\Models\WalletTransaction::create([
                             'user_id' => $sponsor->user_id,
-                            'previous_bv' => $sponsorOldBv,
-                            'bv_change' => -$referralBonus,
-                            'new_bv' => $sponsor->bv,
-                            'type' => 'debit',
-                            'reason' => 'referral_bonus_reversal',
-                            'reference_id' => $user->user_id,
+                            'deposit_by' => 'SYSTEM',
+                            'deposit_to' => 'REVERSAL',
+                            'deposit_amount' => $referralBonus,
+                            'ref_transaction_id' => $user->user_id,
+                            'remark' => 'Referral bonus reversal for ' . $user->name . ' (' . $user->user_id . ')',
+                            'status' => 'approved',
+                            'status_updated_by' => 'SYSTEM',
+                            'status_updated_at' => now()
                         ]);
                         
-                        $sponsor->updateStatusBasedOnBv();
+                        // Create wallet history record
+                        \App\Models\WalletHistory::create([
+                            'user_id' => $sponsor->user_id,
+                            'transaction_id' => 'REV' . time() . rand(100, 999),
+                            'previous_balance' => $previousBalance,
+                            'amount_change' => -$referralBonus,
+                            'new_balance' => $sponsor->wallet_balance,
+                            'type' => 'debit',
+                            'reason' => 'Referral bonus reversal for ' . $user->name . ' (' . $user->user_id . ')',
+                            'reference_transaction_id' => $user->user_id
+                        ]);
                     }
                 }
             }

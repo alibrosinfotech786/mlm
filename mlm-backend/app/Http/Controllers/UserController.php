@@ -1904,4 +1904,277 @@ class UserController extends Controller
             'right_child' => $this->buildBinaryTreeStructure($user->rightChild)
         ];
     }
+    
+    public function calculateTeamPerformanceBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            // Get previous carry forward from last processed report
+            $lastReport = MatchingIncomeReport::where('user_id', $user->user_id)
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            $previousLeftCarryForward = $lastReport ? $lastReport->new_left_carry_forward : 0;
+            $previousRightCarryForward = $lastReport ? $lastReport->new_right_carry_forward : 0;
+            
+            // Get left and right team members
+            $leftTeam = $user->leftChild ? $this->getAllDescendants($user->leftChild) : collect();
+            $rightTeam = $user->rightChild ? $this->getAllDescendants($user->rightChild) : collect();
+            
+            // Add direct children to teams
+            if ($user->leftChild) {
+                $leftTeam->prepend($user->leftChild);
+            }
+            if ($user->rightChild) {
+                $rightTeam->prepend($user->rightChild);
+            }
+            
+            // Calculate current BV for each side
+            $leftCurrentBV = $leftTeam->sum('bv');
+            $rightCurrentBV = $rightTeam->sum('bv');
+            
+            // Add carry forward to current BV
+            $leftTotalBV = $leftCurrentBV + $previousLeftCarryForward;
+            $rightTotalBV = $rightCurrentBV + $previousRightCarryForward;
+            
+            // Calculate matching BV (minimum of both sides)
+            $matchingBV = min($leftTotalBV, $rightTotalBV);
+            
+            // Calculate bonus (20% of matching BV)
+            $bonusAmount = $matchingBV * 0.20;
+            
+            // Calculate new carry forward
+            $leftCarryForward = $leftTotalBV - $matchingBV;
+            $rightCarryForward = $rightTotalBV - $matchingBV;
+            
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'current_wallet_balance' => $user->wallet_balance
+                ],
+                'team_performance' => [
+                    'left_current_bv' => $leftCurrentBV,
+                    'right_current_bv' => $rightCurrentBV,
+                    'previous_left_carry_forward' => $previousLeftCarryForward,
+                    'previous_right_carry_forward' => $previousRightCarryForward,
+                    'left_total_bv' => $leftTotalBV,
+                    'right_total_bv' => $rightTotalBV,
+                    'matching_bv' => $matchingBV,
+                    'bonus_percentage' => 20,
+                    'bonus_amount' => $bonusAmount,
+                    'new_left_carry_forward' => $leftCarryForward,
+                    'new_right_carry_forward' => $rightCarryForward,
+                    'left_team_count' => $leftTeam->count(),
+                    'right_team_count' => $rightTeam->count()
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'TEAM_PERFORMANCE_BONUS_ERROR',
+                'message' => 'Failed to calculate team performance bonus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function processTeamPerformanceBonus(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            $previousWalletBalance = $user->wallet_balance;
+            
+            // Get previous carry forward from last processed report
+            $lastReport = MatchingIncomeReport::where('user_id', $user->user_id)
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            $previousLeftCarryForward = $lastReport ? $lastReport->new_left_carry_forward : 0;
+            $previousRightCarryForward = $lastReport ? $lastReport->new_right_carry_forward : 0;
+            
+            // Get left and right team members
+            $leftTeam = $user->leftChild ? $this->getAllDescendants($user->leftChild) : collect();
+            $rightTeam = $user->rightChild ? $this->getAllDescendants($user->rightChild) : collect();
+            
+            // Add direct children to teams
+            if ($user->leftChild) {
+                $leftTeam->prepend($user->leftChild);
+            }
+            if ($user->rightChild) {
+                $rightTeam->prepend($user->rightChild);
+            }
+            
+            // Calculate current BV for each side
+            $leftCurrentBV = $leftTeam->sum('bv');
+            $rightCurrentBV = $rightTeam->sum('bv');
+            
+            // Add carry forward to current BV
+            $leftTotalBV = $leftCurrentBV + $previousLeftCarryForward;
+            $rightTotalBV = $rightCurrentBV + $previousRightCarryForward;
+            
+            // Calculate matching BV (minimum of both sides)
+            $matchingBV = min($leftTotalBV, $rightTotalBV);
+            
+            // Calculate bonus (20% of matching BV)
+            $calculatedBonus = $matchingBV * 0.20;
+            
+            // Apply 5000 limit
+            $bonusAmount = min($calculatedBonus, 5000);
+            
+            // Calculate new carry forward
+            $leftCarryForward = $leftTotalBV - $matchingBV;
+            $rightCarryForward = $rightTotalBV - $matchingBV;
+            
+            $report = null;
+            
+            if ($bonusAmount > 0) {
+                // Credit bonus to wallet
+                $user->increment('wallet_balance', $bonusAmount);
+                $user->refresh();
+                
+                // Log BV history for tracking
+                BvHistory::create([
+                    'user_id' => $user->user_id,
+                    'previous_bv' => $user->bv,
+                    'bv_change' => $bonusAmount,
+                    'new_bv' => $user->bv,
+                    'type' => 'credit',
+                    'reason' => 'team_performance_matching_bonus',
+                    'reference_id' => 'matching_bonus_' . now()->format('Y_m'),
+                ]);
+            }
+            
+            // Always create team performance bonus report to store carry forward data
+            $report = MatchingIncomeReport::create([
+                'user_id' => $user->user_id,
+                'left_current_bv' => $leftCurrentBV,
+                'right_current_bv' => $rightCurrentBV,
+                'previous_left_carry_forward' => $previousLeftCarryForward,
+                'previous_right_carry_forward' => $previousRightCarryForward,
+                'left_total_bv' => $leftTotalBV,
+                'right_total_bv' => $rightTotalBV,
+                'matching_bv' => $matchingBV,
+                'bonus_percentage' => 20,
+                'bonus_amount' => $bonusAmount,
+                'new_left_carry_forward' => $leftCarryForward,
+                'new_right_carry_forward' => $rightCarryForward,
+                'left_team_count' => $leftTeam->count(),
+                'right_team_count' => $rightTeam->count(),
+                'previous_wallet_balance' => $previousWalletBalance,
+                'new_wallet_balance' => $user->wallet_balance,
+                'status' => 'completed',
+                'processing_type' => 'monthly',
+                'processed_at' => now()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'user' => $user->fresh(),
+                'bonus_processed' => [
+                    'left_current_bv' => $leftCurrentBV,
+                    'right_current_bv' => $rightCurrentBV,
+                    'previous_left_carry_forward' => $previousLeftCarryForward,
+                    'previous_right_carry_forward' => $previousRightCarryForward,
+                    'left_total_bv' => $leftTotalBV,
+                    'right_total_bv' => $rightTotalBV,
+                    'matching_bv' => $matchingBV,
+                    'bonus_amount' => $bonusAmount,
+                    'new_left_carry_forward' => $leftCarryForward,
+                    'new_right_carry_forward' => $rightCarryForward,
+                    'previous_wallet_balance' => $previousWalletBalance,
+                    'new_wallet_balance' => $user->wallet_balance,
+                    'processed' => $bonusAmount > 0,
+                    'report_id' => $report->id
+                ],
+                'message' => $bonusAmount > 0 ? 'Team performance bonus processed and credited to wallet' : 'Carry forward data saved for next processing cycle'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'PROCESS_TEAM_PERFORMANCE_BONUS_ERROR',
+                'message' => 'Failed to process team performance bonus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getTeamPerformanceBonuses(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'nullable|exists:users,user_id',
+                'per_page' => 'nullable|integer|min:1|max:100'
+            ]);
+            
+            $perPage = $request->get('per_page', 10);
+            $query = MatchingIncomeReport::with('user:user_id,name,email')
+                ->orderBy('created_at', 'desc');
+            
+            if ($request->user_id) {
+                $query->where('user_id', $request->user_id);
+            }
+            
+            $bonuses = $query->paginate($perPage);
+            
+            return response()->json([
+                'success' => true,
+                'team_performance_bonuses' => $bonuses
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'TEAM_PERFORMANCE_BONUSES_ERROR',
+                'message' => 'Failed to fetch team performance bonuses',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
