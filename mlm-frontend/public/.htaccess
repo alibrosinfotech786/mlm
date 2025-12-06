@@ -1,19 +1,63 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
-
-  # 1. Do NOT force trailing slash
-  RewriteCond %{REQUEST_URI} !(\.[a-zA-Z0-9]{1,5}|/)$
-  RewriteRule ^ %{REQUEST_URI}/ [R=302,L]
-
-  # 2. If the file or directory exists, serve it
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  
+  # Handle trailing slashes - redirect /contact to /contact/ (except for files)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_URI} !(.*)/$
+  RewriteRule ^(.*)$ $1/ [L,R=301]
+  
+  # If the request is for a directory, serve index.html
   RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # 3. Otherwise route everything to Next.js server handler
-  RewriteRule ^(.*)$ /index.php [L]
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*)$ $1index.html [L]
+  
+  # Fallback: if file doesn't exist, try to serve index.html from that path
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} ^(.+)/$
+  RewriteCond %{DOCUMENT_ROOT}%1/index.html -f
+  RewriteRule ^(.*)$ $1index.html [L]
 </IfModule>
 
-# Do NOT use DirectoryIndex for Next.js
+# Prevent directory listing
 Options -Indexes
+
+# Set default index file
+DirectoryIndex index.html
+
+# Prevent caching of HTML files to avoid 304 responses
+<IfModule mod_headers.c>
+  # Force fresh content for HTML files (prevents 304 Not Modified)
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    # Remove ETag and Last-Modified to prevent 304 responses
+    Header unset ETag
+    Header unset Last-Modified
+  </FilesMatch>
+  
+  # Also prevent caching for directory requests (trailing slash)
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    # Remove ETag and Last-Modified to prevent 304 responses
+    Header unset ETag
+    Header unset Last-Modified
+  </FilesMatch>
+</IfModule>
+
+# Disable ETag for HTML files (alternative method)
+FileETag None
+
+# Cache static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
