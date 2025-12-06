@@ -279,7 +279,7 @@ class UserController extends Controller
                 ], 404);
             }
             
-            $hierarchy = $this->buildMlmHierarchy($rootUser, 5, 0);
+            $hierarchy = $this->buildMlmHierarchy($rootUser, 10, 0);
             
             return response()->json([
                 'success' => true,
