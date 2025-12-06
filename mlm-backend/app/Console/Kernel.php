@@ -4,40 +4,42 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Models\User;
+use App\Http\Controllers\UserController;
 
 class Kernel extends ConsoleKernel
 {
-    protected $commands = [
-        Commands\ProcessMonthlyLevelBonus::class,
-        Commands\ProcessMonthlyMatchingIncome::class,
-    ];
+    protected $commands = [];
 
     protected function schedule(Schedule $schedule)
     {
-        // Run level bonus processing on the last day of every month at 23:59
-        $schedule->command('mlm:process-monthly-level-bonus')
-                 ->monthly()
-                 ->lastDayOfMonth('23:59')
-                 ->description('Process monthly level bonuses for all users');
-        
-        // Run matching income processing on the last day of every month at 23:30
-        $schedule->command('matching:process-monthly')
-                 ->monthly()
-                 ->lastDayOfMonth('23:30')
-                 ->description('Process monthly matching income for all users');
-        
-        // For testing: Run daily when FORCE_MONTHLY_BONUS=true in .env
-        if (env('FORCE_MONTHLY_BONUS', false)) {
-            $schedule->command('mlm:process-monthly-level-bonus')
-                     ->daily()
-                     ->at('00:01')
-                     ->description('Daily level bonus processing for testing');
-            
-            $schedule->command('matching:process-monthly --test')
-                     ->daily()
-                     ->at('00:02')
-                     ->description('Daily matching income processing for testing');
-        }
+        // Process sponsor royalty bonus for all active users at month end
+        $schedule->call(function () {
+            $controller = new UserController();
+            $users = User::where('isActive', true)->get();
+            foreach ($users as $user) {
+                try {
+                    $request = new \Illuminate\Http\Request(['user_id' => $user->user_id]);
+                    $controller->processLevelBonus($request);
+                } catch (\Exception $e) {
+                    \Log::error("Sponsor royalty failed for {$user->user_id}: " . $e->getMessage());
+                }
+            }
+        })->monthlyOn(31, '23:50')->description('Process sponsor royalty bonus for all users');
+
+        // Process team performance bonus for all active users at month end
+        $schedule->call(function () {
+            $controller = new UserController();
+            $users = User::where('isActive', true)->get();
+            foreach ($users as $user) {
+                try {
+                    $request = new \Illuminate\Http\Request(['user_id' => $user->user_id]);
+                    $controller->processTeamPerformanceBonus($request);
+                } catch (\Exception $e) {
+                    \Log::error("Team performance failed for {$user->user_id}: " . $e->getMessage());
+                }
+            }
+        })->monthlyOn(31, '23:55')->description('Process team performance bonus for all users');
     }
 
     protected function commands()

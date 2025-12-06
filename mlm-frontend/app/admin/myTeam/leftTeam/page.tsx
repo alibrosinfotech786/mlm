@@ -14,43 +14,44 @@ export default function LeftTeamPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const fetchTeam = async () => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+const fetchTeam = async () => {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    if (!user?.user_id) return;
+  if (!user?.user_id) return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const res = await axiosInstance.get(
-        `${ProjectApiList.MLM_HIERARCHY_LIST}?user_id=${user.user_id}&side=left&page=${page}&per_page=${entries}&search=${search}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    const res = await axiosInstance.get(
+      `${ProjectApiList.BINARY_TEAM_USERS}?user_id=${user.user_id}&side=left&page=${page}&per_page=${entries}&search=${search}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (res.data.success) {
-        const pagination = res.data.pagination;
+    if (res.data.success) {
+      const pagination = res.data.pagination;
 
-        const formattedData = res.data.downlines.map((item: any) => ({
-          regDate: item.created_at?.split("T")[0] || "-",
-          userId: item.user_id || "-",
-          name: item.name || "-",
-          phone: item.phone || "-",
-          sponsorUserId: item.sponsor_id || "-",
-          placement: item.position || "-",
-          bv: Number(item.bv) || 0,
-        }));
+      // 🔥 NEW: map team_users instead of downlines
+      const formattedData = res.data.team_users.map((item: any) => ({
+        regDate: item.created_at?.split("T")[0] || "-",
+        userId: item.user_id || "-",
+        name: item.name || "-",
+        phone: item.phone || "-",
+        sponsorUserId: item.sponsor_id || "-",
+        bv: Number(item.bv) || 0,
+      }));
 
-        setTeamData(formattedData);
-        setTotalPages(pagination?.last_page || 1);
-        setPage(pagination?.current_page || 1);
-      }
-    } catch (error) {
-      console.error("Left Team Fetch Error:", error);
-    } finally {
-      setLoading(false);
+      setTeamData(formattedData);
+      setTotalPages(pagination?.last_page || 1);
+      setPage(pagination?.current_page || 1);
     }
-  };
+  } catch (error) {
+    console.error("Binary Left Team Fetch Error:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchTeam();

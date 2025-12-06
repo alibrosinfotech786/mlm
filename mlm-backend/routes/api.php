@@ -18,6 +18,7 @@ use App\Http\Controllers\StateController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\BvTopupRequestController;
 
 // test
 Route::get('/test', function () {
@@ -75,9 +76,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/mlm-hierarchy', [UserController::class, 'getMlmHierarchy']);
     Route::get('/users/mlm-hierarchy-4-levels', [UserController::class, 'getMlmHierarchy4Levels']);
     Route::get('/users/mlm-hierarchy-list', [UserController::class, 'getMlmHierarchyList']);
-    Route::get('/users/sponsored-users', [UserController::class, 'getSponsoredUsers']);
-    Route::get('/users/level-bonus', [UserController::class, 'calculateLevelBonus']);
-    Route::post('/users/process-level-bonus', [UserController::class, 'processLevelBonus']); #sponser royality income
     Route::get('/users/mlm-structure', [UserController::class, 'getMlmStructure']);
     Route::get('/users/available-positions', [UserController::class, 'getAvailablePosition']);
     Route::get('/users/bonus-received', [UserController::class, 'getBonusReceived']);
@@ -86,14 +84,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/binary-team-bv', [UserController::class, 'getBinaryTeamBV']);
     // Route::get('/users/matching-income', [UserController::class, 'getMatchingIncome']);
     // Route::get('/users/daily-matching-income', [UserController::class, 'getDailyMatchingIncome']);
-    Route::get('/users/level-bonus-reports', [UserController::class, 'getLevelBonusReports']);
-    Route::get('/users/level-bonus-report', [UserController::class, 'getLevelBonusReport']);
-    Route::get('/users/{user_id}/level-bonus-reports', [UserController::class, 'getUserLevelBonusReports']);
+    Route::get('/users/sponsored-users', [UserController::class, 'getSponsoredUsers']);
+    Route::get('/users/sponsor-royalty-bonus', [UserController::class, 'calculateLevelBonus']);
+    Route::post('/users/process-sponsor-royalty-bonus', [UserController::class, 'processLevelBonus']);
+    
+    // sponsor royalty routes
+    Route::get('/users/sponsor-royalty-reports', [UserController::class, 'getLevelBonusReports']);
+    Route::get('/users/sponsor-royalty-report', [UserController::class, 'getLevelBonusReport']);
+    Route::get('/users/{user_id}/sponsor-royalty-reports', [UserController::class, 'getUserLevelBonusReports']);
     Route::get('/users/matching-income-reports', [UserController::class, 'getMatchingIncomeReports']);
     Route::get('/users/{user_id}/matching-income-reports', [UserController::class, 'getUserMatchingIncomeReports']);
+    
+    // team performance routes
     Route::get('/users/next-team-performance-bonus', [UserController::class, 'calculateTeamPerformanceBonus']);
     Route::post('/users/process-team-performance-bonus', [UserController::class, 'processTeamPerformanceBonus']);
     Route::get('/users/team-performance-bonuses', [UserController::class, 'getTeamPerformanceBonuses']);
+    Route::get('/users/binary-team-users', [UserController::class, 'getBinaryTeamUsers']);
 
     // KYC routes
     Route::get('/kyc', [KycController::class, 'index']);
@@ -143,6 +149,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bv-history', [BvHistoryController::class, 'index']);
     Route::get('/bv-history/show', [BvHistoryController::class, 'show']);
     Route::get('/bv-history/credited', [BvHistoryController::class, 'showCredited']);
+    
+    // BV Topup Request routes
+    Route::get('/bv-topup-requests', [BvTopupRequestController::class, 'index']);
+    Route::post('/bv-topup-requests/store', [BvTopupRequestController::class, 'store']);
+    Route::post('/bv-topup-requests/approve', [BvTopupRequestController::class, 'approve']);
 
     // Wallet Transaction routes
     Route::get('/wallet-transactions', [WalletTransactionController::class, 'index']);

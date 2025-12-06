@@ -5,11 +5,53 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@/app/api/axiosInstance";
 import ProjectApiList from "@/app/api/ProjectApiList";
 import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
 
+/* =======================================
+    REUSABLE PASSWORD INPUT COMPONENT
+======================================= */
+interface PasswordInputProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+}
+
+function PasswordField({ label, name, value, onChange, required }: PasswordInputProps) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-muted-foreground mb-1">
+        {label}
+      </label>
+
+      <input
+        type={show ? "text" : "password"}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground 
+        focus:ring-2 focus:ring-green-500 outline-none transition"
+      />
+
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-3 top-10 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+      >
+        {show ? <EyeOff size={20} /> : <Eye size={20} />}
+      </button>
+    </div>
+  );
+}
+
+/* =======================================
+      MAIN PAGE
+======================================= */
 export default function ChangePasswordPage() {
-  /* =======================================
-        STATES
-  ======================================= */
   const [loginLoading, setLoginLoading] = useState(false);
   const [transactionLoading, setTransactionLoading] = useState(false);
 
@@ -27,8 +69,11 @@ export default function ChangePasswordPage() {
 
   const [transactionExists, setTransactionExists] = useState(false);
 
+
+  console.log(transactionExists, "transactionExists-------------------------->")
+
   /* =======================================
-        FETCH USER (TO CHECK IF EXISTS)
+        GET USER TO CHECK IF TRANSACTION EXISTS
   ======================================= */
   useEffect(() => {
     const loadUser = async () => {
@@ -38,9 +83,11 @@ export default function ChangePasswordPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (res?.data?.success && res.data.users?.length > 0) {
-          const user = res.data.users[0];
-          // If transaction_password is null/undefined/empty string -> treat as not existing
+        console.log(res?.data?.success, "res-------------------------->")
+
+        if (res?.data?.success) {
+          const user = res.data.user;
+          console.log(user, "user-------------------------->")
           setTransactionExists(!!user.transaction_password);
         }
       } catch {
@@ -60,7 +107,7 @@ export default function ChangePasswordPage() {
     };
 
   /* =======================================
-        SUBMIT HANDLER (LOGIN + TRANSACTION)
+        SUBMIT HANDLER
   ======================================= */
   const handleSubmit =
     (type: "login" | "transaction") => async (e: React.FormEvent) => {
@@ -88,9 +135,9 @@ export default function ChangePasswordPage() {
       }
 
       try {
-        /* ==========================
+        /* ===================================
             UPDATE LOGIN PASSWORD
-        ========================== */
+        =================================== */
         if (type === "login") {
           setLoginLoading(true);
 
@@ -104,10 +151,7 @@ export default function ChangePasswordPage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          if (
-            res?.data?.error ||
-            res?.data?.message?.toLowerCase().includes("incorrect")
-          ) {
+          if (res?.data?.error || res?.data?.message?.toLowerCase().includes("incorrect")) {
             toast.error("Current login password is incorrect.");
             setLoginLoading(false);
             return;
@@ -126,20 +170,17 @@ export default function ChangePasswordPage() {
           return;
         }
 
-        /* ==========================
+        /* ===================================
             UPDATE TRANSACTION PASSWORD
-           (If transaction password doesn't exist — only send new password)
-        ========================== */
+        =================================== */
         setTransactionLoading(true);
 
-        // Build payload depending on whether transaction exists
         const payload: any = {
           user_id: userId,
           transaction_password: data.new_password,
         };
 
         if (transactionExists) {
-          // If transaction password exists, API might expect the current one
           payload.current_transaction_password = data.current_password;
         }
 
@@ -153,7 +194,6 @@ export default function ChangePasswordPage() {
           res?.data?.error ||
           (res?.data?.message && res.data.message.toLowerCase().includes("incorrect"))
         ) {
-          // If we expected a current password but it was wrong
           toast.error(
             transactionExists
               ? "Current transaction password is incorrect."
@@ -184,48 +224,38 @@ export default function ChangePasswordPage() {
   /* =======================================
         UI
   ======================================= */
-
   return (
     <>
-      {/* <AdminHeader /> */}
-
       <section className="min-h-screen bg-background py-12 px-6 lg:px-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
 
-          {/* ================================
-                LEFT — LOGIN PASSWORD
-          ================================ */}
+          {/* LEFT — LOGIN PASSWORD */}
           <div className="bg-white border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-8">
             <h2 className="text-xl font-semibold text-foreground border-b border-border pb-3 mb-6">
               Change Login Password
             </h2>
 
             <form onSubmit={handleSubmit("login")} className="space-y-5">
-              {[ 
+              {[
                 { id: "current_password", label: "Current Password" },
                 { id: "new_password", label: "New Password" },
                 { id: "confirm_password", label: "Confirm New Password" },
               ].map((field) => (
-                <div key={field.id}>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    {field.label}
-                  </label>
-                  <input
-                    type="password"
-                    name={field.id}
-                    value={(loginPassword as any)[field.id]}
-                    onChange={handleChange(setLoginPassword)}
-                    required
-                    className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                  />
-                </div>
+                <PasswordField
+                  key={field.id}
+                  label={field.label}
+                  name={field.id}
+                  value={loginPassword[field.id as keyof typeof loginPassword]}
+                  onChange={handleChange(setLoginPassword)}
+                  required
+                />
               ))}
 
               <div className="pt-3 flex justify-end">
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="px-6 py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-6 py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70"
                 >
                   {loginLoading ? "Updating..." : "Update Password"}
                 </button>
@@ -233,68 +263,44 @@ export default function ChangePasswordPage() {
             </form>
           </div>
 
-          {/* ================================
-                RIGHT — TRANSACTION PASSWORD
-          ================================ */}
+          {/* RIGHT — TRANSACTION PASSWORD */}
           <div className="bg-white border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-8">
             <h2 className="text-xl font-semibold text-foreground border-b border-border pb-3 mb-6">
               Change Transaction Password
             </h2>
 
             <form onSubmit={handleSubmit("transaction")} className="space-y-5">
-
-              {/* SHOW CURRENT PASSWORD ONLY IF TRANSACTION PASSWORD EXISTS */}
               {transactionExists && (
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    Current Transaction Password
-                  </label>
-                  <input
-                    type="password"
-                    name="current_password"
-                    value={transactionPassword.current_password}
-                    onChange={handleChange(setTransactionPassword)}
-                    required={transactionExists}
-                    className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                  />
-                </div>
+                <PasswordField
+                  label="Current Transaction Password"
+                  name="current_password"
+                  value={transactionPassword.current_password}
+                  onChange={handleChange(setTransactionPassword)}
+                  required
+                />
               )}
 
-              {/* NEW PASSWORD */}
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  New Transaction Password
-                </label>
-                <input
-                  type="password"
-                  name="new_password"
-                  value={transactionPassword.new_password}
-                  onChange={handleChange(setTransactionPassword)}
-                  required
-                  className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                />
-              </div>
+              <PasswordField
+                label="New Transaction Password"
+                name="new_password"
+                value={transactionPassword.new_password}
+                onChange={handleChange(setTransactionPassword)}
+                required
+              />
 
-              {/* CONFIRM PASSWORD */}
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Confirm Transaction Password
-                </label>
-                <input
-                  type="password"
-                  name="confirm_password"
-                  value={transactionPassword.confirm_password}
-                  onChange={handleChange(setTransactionPassword)}
-                  required
-                  className="w-full px-4 py-2.5 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none transition"
-                />
-              </div>
+              <PasswordField
+                label="Confirm Transaction Password"
+                name="confirm_password"
+                value={transactionPassword.confirm_password}
+                onChange={handleChange(setTransactionPassword)}
+                required
+              />
 
               <div className="pt-3 flex justify-end">
                 <button
                   type="submit"
                   disabled={transactionLoading}
-                  className="px-6 py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-6 py-2 rounded-md bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70"
                 >
                   {transactionLoading ? "Updating..." : "Update Transaction Password"}
                 </button>

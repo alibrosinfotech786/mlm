@@ -62,7 +62,7 @@ export default function LevelBonusReports() {
       const token = localStorage.getItem("token");
 
       const res = await axiosInstance.get(
-        `/users/${userId}/level-bonus-reports?page=${page}`,
+        `/users/${userId}/sponsor-royalty-reports?page=${page}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -95,7 +95,7 @@ export default function LevelBonusReports() {
           {/* TITLE */}
           <div>
             <h1 className="text-2xl font-bold text-green-800">
-              Matching Level Bonus.
+              Matching Level Bonus (Sponser Royality Income).
             </h1>
             <p className="text-green-700 text-sm ">
               View your levelwise bonus history.

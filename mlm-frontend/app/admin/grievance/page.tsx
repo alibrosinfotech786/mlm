@@ -574,15 +574,15 @@ export default function GrievancePage() {
                             )}
 
                             {/* ACTION BUTTONS */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center gap-3">
 
                               {/* VIEW */}
-                              <button
+                              {/* <button
                                 onClick={() => openView(row.id)}
                                 className="text-blue-600 text-xs hover:underline"
                               >
                                 Details
-                              </button>
+                              </button> */}
 
                               {/* EDIT (User only) */}
                               {!isAdmin && (

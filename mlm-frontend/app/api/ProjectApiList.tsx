@@ -64,6 +64,7 @@ const ProjectApiList = {
   // Teams
   MLM_HIERARCHY_LIST: `${BASE_URL}/users/mlm-hierarchy-list`,
   SPONSORED_USERS: `${BASE_URL}/users/sponsored-users`,
+  BINARY_TEAM_USERS: `${BASE_URL}/users/binary-team-users`,
 
 
   // Wallet transaction 

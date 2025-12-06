@@ -55,13 +55,6 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
       ]
     },
     {
-      name: "Masters",
-      items: [
-        { name: "State", module: "Add State", href: "/admin/masters/state" },
-        { name: "District", module: "Add District", href: "/admin/masters/district" }
-      ]
-    },
-    {
       name: "Events",
       items: [
         { name: "Add Events", module: "Add Events", href: "/admin/events" },
@@ -115,7 +108,15 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
         { name: "All Wallet Request", module: "All Wallet Request", href: "/admin/wallet/allWalletRequests" },
         { name: "Wallet Status", module: "Wallet Status", href: "/admin/wallet/walletStatus" },
         { name: "Wallet Summary", module: "Wallet Summary", href: "/admin/wallet/walletSummary" },
-        { name: "BV Summary", module: "BV Summary", href: "/admin/wallet/bvSummary" },
+      ],
+    },
+    {
+      name: "BV",
+      items: [
+        { name: "BV Request", module: "BV Request", href: "/admin/bvSection/bvRequest" },
+        { name: "All BV Request", module: "All BV Request", href: "/admin/bvSection/allBVRequests" },
+        { name: "BV Status", module: "BV Status", href: "/admin/bvSection/bvStatus" },
+        { name: "BV Summary", module: "BV Summary", href: "/admin/bvSection/bvSummary" },
       ],
     },
 
@@ -134,6 +135,7 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
       name: "My Income",
       items: [
         { name: "Matching Income", module: "Matching Income", href: "/admin/Income/matchingIncome" },
+        { name: "Team Performance Bonus", module: "Team Performance Bonus", href: "/admin/Income/teamPerformanceBonus" },
       ],
     },
 

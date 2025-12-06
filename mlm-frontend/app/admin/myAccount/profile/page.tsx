@@ -97,9 +97,9 @@ export default function ProfilePage() {
                   {user.name}
                 </h1>
 
-                <p className="text-green-100 text-sm mt-1">
+                {/* <p className="text-green-100 text-sm mt-1">
                   Rank: <span className="uppercase">{user.rank}</span>
-                </p>
+                </p> */}
 
                 <p className="text-green-100 text-sm mt-1">
                   Package: <span className="uppercase">{user.package}</span>

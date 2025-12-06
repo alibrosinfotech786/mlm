@@ -138,7 +138,7 @@ export default function KycViewPage() {
                     value={kyc.confirm_disclaimer ? "Yes" : "No"}
                   />
 
-                  <div>
+                  {/* <div>
                     <p className="text-gray-500">Status</p>
                     <span
                       className={`px-2 py-1 rounded text-xs ${
@@ -151,7 +151,7 @@ export default function KycViewPage() {
                     >
                       {kyc.status}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

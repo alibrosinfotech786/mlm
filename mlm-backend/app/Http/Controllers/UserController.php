@@ -81,7 +81,7 @@ class UserController extends Controller
                 }
             }
             
-            $data = $request->only(['name', 'email', 'phone', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role', 'isActive']);
+            $data = $request->only(['name', 'email', 'phone', 'address', 'sponsor_id', 'sponsor_name', 'root_id', 'position', 'nominee', 'role', 'isActive']);
             
             if ($request->password) {
                 $data['password'] = Hash::make($request->password);
@@ -512,6 +512,46 @@ class UserController extends Controller
                 });
             }
             
+            // Add left and right team counts and children to each downline
+            $downlines = $downlines->map(function($member) {
+                $leftTeam = $member->leftChild ? $this->getAllDescendants($member->leftChild) : collect();
+                if ($member->leftChild) {
+                    $leftTeam->prepend($member->leftChild);
+                }
+                $rightTeam = $member->rightChild ? $this->getAllDescendants($member->rightChild) : collect();
+                if ($member->rightChild) {
+                    $rightTeam->prepend($member->rightChild);
+                }
+                
+                $member->left_team_count = $leftTeam->count();
+                $member->right_team_count = $rightTeam->count();
+                
+                // Add left and right child details
+                $member->left_user = $member->leftChild ? [
+                    'user_id' => $member->leftChild->user_id,
+                    'name' => $member->leftChild->name,
+                    'email' => $member->leftChild->email,
+                    'phone' => $member->leftChild->phone,
+                    'position' => $member->leftChild->position,
+                    'bv' => $member->leftChild->bv,
+                    'isActive' => $member->leftChild->isActive,
+                    'created_at' => $member->leftChild->created_at
+                ] : null;
+                
+                $member->right_user = $member->rightChild ? [
+                    'user_id' => $member->rightChild->user_id,
+                    'name' => $member->rightChild->name,
+                    'email' => $member->rightChild->email,
+                    'phone' => $member->rightChild->phone,
+                    'position' => $member->rightChild->position,
+                    'bv' => $member->rightChild->bv,
+                    'isActive' => $member->rightChild->isActive,
+                    'created_at' => $member->rightChild->created_at
+                ] : null;
+                
+                return $member;
+            });
+            
             // Apply pagination
             $perPage = $request->get('per_page', 10);
             $currentPage = $request->get('page', 1);
@@ -739,7 +779,7 @@ class UserController extends Controller
                 ], 404);
             }
             
-            $previousBv = $rootUser->bv;
+            $previousWalletBalance = $rootUser->wallet_balance;
             $levelBonuses = [];
             $totalBonus = 0;
             
@@ -764,19 +804,20 @@ class UserController extends Controller
                     $bonus = $minBv * ($config['percentage'] / 100);
                     
                     if ($bonus > 0) {
-                        $oldBv = $rootUser->bv;
-                        $rootUser->increment('bv', $bonus);
+                        $previousWalletBalance = $rootUser->wallet_balance;
+                        $rootUser->increment('wallet_balance', $bonus);
                         $rootUser->refresh();
                         
-                        // Log BV history with level information
-                        BvHistory::create([
+                        // Create wallet history
+                        \App\Models\WalletHistory::create([
                             'user_id' => $rootUser->user_id,
-                            'previous_bv' => $oldBv,
-                            'bv_change' => $bonus,
-                            'new_bv' => $rootUser->bv,
+                            'transaction_id' => 'SRL' . $level . '_' . now()->format('YmdHis'),
+                            'previous_balance' => $previousWalletBalance,
+                            'amount_change' => $bonus,
+                            'new_balance' => $rootUser->wallet_balance,
                             'type' => 'credit',
-                            'reason' => 'team_performance_bonus_level_' . $level,
-                            'reference_id' => 'level_' . $level . '_bonus',
+                            'reason' => 'sponsor_royalty_level_' . $level . '_bonus',
+                            'reference_transaction_id' => 'SRL' . $level . '_' . $rootUser->user_id
                         ]);
                         
                         $totalBonus += $bonus;
@@ -811,8 +852,8 @@ class UserController extends Controller
                 'user_id' => $rootUser->user_id,
                 'total_bonus_credited' => $totalBonus,
                 'level_bonuses_data' => $levelBonuses,
-                'previous_bv' => $previousBv,
-                'new_bv' => $rootUser->bv,
+                'previous_bv' => $previousWalletBalance,
+                'new_bv' => $rootUser->wallet_balance,
                 'status' => 'completed'
             ]);
             
@@ -2066,15 +2107,16 @@ class UserController extends Controller
                 $user->increment('wallet_balance', $bonusAmount);
                 $user->refresh();
                 
-                // Log BV history for tracking
-                BvHistory::create([
+                // Create wallet history
+                \App\Models\WalletHistory::create([
                     'user_id' => $user->user_id,
-                    'previous_bv' => $user->bv,
-                    'bv_change' => $bonusAmount,
-                    'new_bv' => $user->bv,
+                    'transaction_id' => 'TPB_' . now()->format('YmdHis'),
+                    'previous_balance' => $previousWalletBalance,
+                    'amount_change' => $bonusAmount,
+                    'new_balance' => $user->wallet_balance,
                     'type' => 'credit',
-                    'reason' => 'team_performance_matching_bonus',
-                    'reference_id' => 'matching_bonus_' . now()->format('Y_m'),
+                    'reason' => 'team_performance_bonus',
+                    'reference_transaction_id' => 'TPB_' . $user->user_id . '_' . now()->format('Ym')
                 ]);
             }
             
@@ -2173,6 +2215,152 @@ class UserController extends Controller
                 'success' => false,
                 'error_type' => 'TEAM_PERFORMANCE_BONUSES_ERROR',
                 'message' => 'Failed to fetch team performance bonuses',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getBinaryTeamSummary(Request $request)
+    {
+        try {
+            $request->validate(['user_id' => 'required|exists:users,user_id']);
+            
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            // Get left team
+            $leftTeam = $user->leftChild ? $this->getAllDescendants($user->leftChild) : collect();
+            if ($user->leftChild) {
+                $leftTeam->prepend($user->leftChild);
+            }
+            
+            // Get right team
+            $rightTeam = $user->rightChild ? $this->getAllDescendants($user->rightChild) : collect();
+            if ($user->rightChild) {
+                $rightTeam->prepend($user->rightChild);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ],
+                'binary_team_summary' => [
+                    'total_left_users' => $leftTeam->count(),
+                    'total_right_users' => $rightTeam->count(),
+                    'total_users' => $leftTeam->count() + $rightTeam->count(),
+                    'left_active_users' => $leftTeam->where('isActive', true)->count(),
+                    'right_active_users' => $rightTeam->where('isActive', true)->count(),
+                    'left_total_bv' => $leftTeam->sum('bv'),
+                    'right_total_bv' => $rightTeam->sum('bv')
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'BINARY_TEAM_SUMMARY_ERROR',
+                'message' => 'Failed to fetch binary team summary',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getBinaryTeamUsers(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,user_id',
+                'side' => 'required|in:left,right',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'search' => 'nullable|string'
+            ]);
+            
+            $user = User::where('user_id', $request->user_id)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error_type' => 'USER_NOT_FOUND',
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            // Get team based on side
+            $sideChild = $request->side === 'left' ? $user->leftChild : $user->rightChild;
+            
+            if ($sideChild) {
+                $teamUsers = $this->getAllDescendants($sideChild);
+                $teamUsers->prepend($sideChild);
+            } else {
+                $teamUsers = collect();
+            }
+            
+            // Apply search filter
+            if ($request->has('search') && $request->search !== '') {
+                $searchTerm = $request->search;
+                $teamUsers = $teamUsers->filter(function ($user) use ($searchTerm) {
+                    return stripos($user->user_id, $searchTerm) !== false ||
+                           stripos($user->name, $searchTerm) !== false ||
+                           stripos($user->email, $searchTerm) !== false;
+                });
+            }
+            
+            // Apply pagination
+            $perPage = $request->get('per_page', 10);
+            $currentPage = $request->get('page', 1);
+            $total = $teamUsers->count();
+            $offset = ($currentPage - 1) * $perPage;
+            
+            $paginatedUsers = $teamUsers->slice($offset, $perPage)->values();
+            
+            $pagination = [
+                'current_page' => (int) $currentPage,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+                'from' => $total > 0 ? $offset + 1 : null,
+                'to' => $total > 0 ? min($offset + $perPage, $total) : null
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ],
+                'side' => $request->side,
+                'team_users' => $paginatedUsers,
+                'pagination' => $pagination
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error_type' => 'BINARY_TEAM_USERS_ERROR',
+                'message' => 'Failed to fetch binary team users',
                 'error' => $e->getMessage()
             ], 500);
         }

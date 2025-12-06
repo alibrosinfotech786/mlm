@@ -476,11 +476,29 @@ class AuthController extends Controller
     public function setTransactionPassword(Request $request)
     {
         try {
-            $request->validate([
-                'transaction_password' => 'required|string|min:4',
-            ]);
-
             $user = $request->user();
+            
+            // If user already has transaction password, require current password
+            if ($user->transaction_password) {
+                $request->validate([
+                    'current_transaction_password' => 'required|string',
+                    'transaction_password' => 'required|string|min:4',
+                ]);
+                
+                if (!Hash::check($request->current_transaction_password, $user->transaction_password)) {
+                    return response()->json([
+                        'success' => false,
+                        'error_type' => 'INVALID_CURRENT_PASSWORD',
+                        'message' => 'Current transaction password is incorrect'
+                    ], 422);
+                }
+            } else {
+                // First time setup - only require new password
+                $request->validate([
+                    'transaction_password' => 'required|string|min:4',
+                ]);
+            }
+            
             $user->update([
                 'transaction_password' => Hash::make($request->transaction_password)
             ]);
