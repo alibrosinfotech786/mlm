@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import TreeView from "./components/TreeView";
 import axiosInstance from "@/app/api/axiosInstance";
@@ -28,6 +28,8 @@ export default function TreeViewPage() {
   const [searchId, setSearchId] = useState("");
   const [userDetails, setUserDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const treeWrapperRef = useRef<HTMLDivElement>(null);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL_IMAGE || "";
 
@@ -109,6 +111,53 @@ export default function TreeViewPage() {
       fetchTree(u.user_id);
     }
   }, []);
+
+  // Center the horizontal scroll when tree data is loaded
+  useEffect(() => {
+    if (treeData && scrollContainerRef.current && treeWrapperRef.current && !loading) {
+      const centerScroll = () => {
+        const container = scrollContainerRef.current;
+        const wrapper = treeWrapperRef.current;
+        
+        if (container && wrapper) {
+          // Wait for next frame to ensure layout is complete
+          requestAnimationFrame(() => {
+            if (container && wrapper) {
+              const containerWidth = container.clientWidth;
+              const scrollWidth = container.scrollWidth;
+              
+              // Only center if content is wider than container
+              if (scrollWidth > containerWidth) {
+                // Calculate center position
+                const centerScrollPosition = (scrollWidth - containerWidth) / 2;
+                
+                // Set scroll position to center
+                container.scrollLeft = centerScrollPosition;
+              }
+            }
+          });
+        }
+      };
+
+      // Use multiple delays to ensure DOM is fully rendered and scaled
+      const timeout1 = setTimeout(() => {
+        centerScroll();
+        const timeout2 = setTimeout(() => {
+          centerScroll();
+        }, 200);
+        const timeout3 = setTimeout(() => {
+          centerScroll();
+        }, 500);
+        
+        return () => {
+          clearTimeout(timeout2);
+          clearTimeout(timeout3);
+        };
+      }, 100);
+
+      return () => clearTimeout(timeout1);
+    }
+  }, [treeData, loading]);
 
   return (
     <>
@@ -193,9 +242,10 @@ export default function TreeViewPage() {
 
           {/* Tree */}
           <div
+            ref={scrollContainerRef}
             className="
     bg-white rounded-xl shadow-md border 
-    p-2 h-[600px] 
+    h-[600px] 
     overflow-x-auto overflow-y-auto 
     scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-gray-200
   "
@@ -203,24 +253,39 @@ export default function TreeViewPage() {
             {loading ? (
               <p className="text-center py-10 text-green-700">Loading Tree...</p>
             ) : treeData ? (
-              <div
-                className="
-    mx-auto 
-    transform origin-top
-    scale-[0.55] 
-    xs:scale-[0.60]
-    sm:scale-[0.70]
-    md:scale-[0.85]
-    lg:scale-100
-  "
+              <div 
+                ref={treeWrapperRef}
+                className="py-4"
+                style={{ 
+                  display: 'block',
+                  width: 'max-content',
+                  minWidth: '100%',
+                  margin: '0 auto',
+                  paddingLeft: '50vw',
+                  paddingRight: '50vw',
+                  boxSizing: 'content-box'
+                }}
               >
-                <TreeView
-                  data={treeData}
-                  onNodeDoubleClick={(id) => {
-                    setSearchId(id);
-                    fetchTree(id);
-                  }}
-                />
+                <div
+                  className="
+      transform origin-top
+      scale-[0.55] 
+      xs:scale-[0.60]
+      sm:scale-[0.70]
+      md:scale-[0.85]
+      lg:scale-100
+      mx-auto
+    "
+                  style={{ width: 'fit-content' }}
+                >
+                  <TreeView
+                    data={treeData}
+                    onNodeDoubleClick={(id) => {
+                      setSearchId(id);
+                      fetchTree(id);
+                    }}
+                  />
+                </div>
               </div>
             ) : (
               <p className="text-red-600 text-center py-10">No Data</p>

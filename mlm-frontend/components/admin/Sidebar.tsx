@@ -47,7 +47,13 @@ export default function Sidebar({ isOpen, setIsOpen }: any) {
     { name: "Manage Role", module: "Manage Role", href: "/admin/roles" },
 
     { name: "Manage Users", module: "Manage Users", href: "/admin/users" },
-
+    {
+      name: "Masters",
+      items: [
+        { name: "State", module: "Add State", href: "/admin/masters/state" },
+        { name: "District", module: "Add District", href: "/admin/masters/district" }
+      ]
+    },
     {
       name: "Events",
       items: [
